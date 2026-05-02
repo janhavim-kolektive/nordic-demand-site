@@ -60,7 +60,7 @@ html,body{min-height:100vh;background:var(--navy);color:var(--text);
 .page-sub{color:var(--muted);font-size:13px;margin-bottom:2rem;font-weight:300}
 
 /* METRICS */
-.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
+.metrics{display:grid !important;grid-template-columns:repeat(4,1fr) !important;
          gap:12px;margin-bottom:1.5rem}
 .metric{background:var(--navy2);border:1px solid var(--border);
         border-radius:10px;padding:1rem 1.25rem}
@@ -77,10 +77,10 @@ html,body{min-height:100vh;background:var(--navy);color:var(--text);
 .card-title{font-size:10px;letter-spacing:.12em;color:var(--muted);
             text-transform:uppercase;margin-bottom:1rem;
             padding-bottom:.75rem;border-bottom:1px solid var(--border)}
-.two-col{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem}
+.two-col{display:grid !important;grid-template-columns:1fr 1fr !important;gap:1.25rem}
 
 /* HOME CARDS */
-.home-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin:1.5rem 0}
+.home-grid{display:grid !important;grid-template-columns:1fr 1fr !important;gap:1.25rem;margin:1.5rem 0}
 .home-card{background:var(--navy2);border:1px solid var(--border);
            border-radius:14px;padding:1.75rem;cursor:pointer;transition:all .2s}
 .home-card:hover{border-color:var(--teal);transform:translateY(-2px)}
@@ -90,7 +90,7 @@ html,body{min-height:100vh;background:var(--navy);color:var(--text);
 .home-card-desc{font-size:12.5px;color:var(--muted);line-height:1.6}
 
 /* HERO METRICS */
-.hero-metrics{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin:1.5rem 0}
+.hero-metrics{display:grid !important;grid-template-columns:repeat(5,1fr) !important;gap:10px;margin:1.5rem 0}
 .hero-metric{text-align:center;padding:1.25rem .5rem;
              background:var(--navy2);border:1px solid var(--border);border-radius:10px}
 .hero-val{font-family:var(--font-display);font-size:30px;color:var(--teal2)}
