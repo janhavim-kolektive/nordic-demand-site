@@ -5,299 +5,204 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Nordic Kolektive Ventures · Demand Intelligence</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
-/* ── Reset & tokens ─────────────────────────────────────────── */
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
   --navy:#060D1A;--navy2:#0D1C35;--navy3:#162A4A;
   --teal:#0D9488;--teal2:#14B8A6;--gold:#D4A017;--gold2:#F0C040;
   --text:#E8F0F8;--muted:#6B8BAF;--border:#1E3155;
   --red:#DC4444;--green:#22C55E;--amber:#F59E0B;
-  --font-display:'Bebas Neue',sans-serif;
+  --font-display:'Bebas Neue',cursive;
   --font-body:'DM Sans',sans-serif;
   --font-mono:'DM Mono',monospace;
 }
-html{scroll-behavior:smooth}
-body{background:var(--navy);color:var(--text);font-family:var(--font-body);
-     min-height:100vh;overflow-x:hidden}
-
-/* ── Layout ─────────────────────────────────────────────────── */
+html,body{min-height:100vh;background:var(--navy);color:var(--text);
+          font-family:var(--font-body);overflow-x:hidden}
 .app{display:grid;grid-template-columns:220px 1fr;min-height:100vh}
 
-/* ── Sidebar ─────────────────────────────────────────────────── */
+/* SIDEBAR */
 .sidebar{background:var(--navy2);border-right:1px solid var(--border);
          position:fixed;top:0;left:0;width:220px;height:100vh;
-         display:flex;flex-direction:column;z-index:100;overflow-y:auto}
-.brand{padding:1.75rem 1.25rem 1.25rem;border-bottom:1px solid var(--border)}
-.brand-tag{font-size:9px;letter-spacing:.18em;color:var(--muted);
-           text-transform:uppercase;margin-bottom:6px}
-.brand-name{font-family:var(--font-display);font-size:22px;
-            color:var(--text);letter-spacing:.04em;line-height:1.1}
+         display:flex;flex-direction:column;z-index:100}
+.brand{padding:1.5rem 1.25rem 1rem;border-bottom:1px solid var(--border)}
+.brand-tag{font-size:9px;letter-spacing:.18em;color:var(--muted);text-transform:uppercase;margin-bottom:5px}
+.brand-name{font-family:var(--font-display);font-size:22px;color:var(--text);line-height:1.1}
 .brand-accent{color:var(--teal2)}
-.pipeline-dot{display:flex;align-items:center;gap:6px;margin-top:10px}
-.dot{width:6px;height:6px;border-radius:50%;background:var(--teal2);
-     animation:pulse 2s infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.pipeline-dot{display:flex;align-items:center;gap:6px;margin-top:8px}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--teal2)}
 .dot-label{font-size:10px;color:var(--muted)}
-
-.nav{padding:.75rem 0;flex:1}
+.nav{padding:.5rem 0;flex:1}
 .nav-section{font-size:9px;letter-spacing:.14em;color:var(--muted);
-             text-transform:uppercase;padding:.5rem 1.25rem .25rem;
-             margin-top:.5rem}
+             text-transform:uppercase;padding:.5rem 1.25rem .25rem}
 .nav-item{display:flex;align-items:center;gap:10px;padding:.6rem 1.25rem;
           cursor:pointer;border-left:2px solid transparent;
-          transition:all .18s;color:var(--muted);font-size:13px;
-          font-weight:400;text-decoration:none}
-.nav-item:hover{color:var(--text);background:rgba(255,255,255,.03);
-                border-left-color:var(--border)}
+          transition:all .15s;color:var(--muted);font-size:13px}
+.nav-item:hover{color:var(--text);background:rgba(255,255,255,.03)}
 .nav-item.active{color:var(--teal2);border-left-color:var(--teal2);
                  background:rgba(13,148,136,.08)}
-.nav-icon{font-size:15px;width:18px;text-align:center}
 .nav-badge{margin-left:auto;font-size:10px;background:var(--red);
-           color:#fff;padding:2px 6px;border-radius:8px;font-weight:500}
-.nav-badge.teal{background:rgba(13,148,136,.25);color:var(--teal2)}
+           color:#fff;padding:2px 6px;border-radius:8px}
+.sidebar-footer{padding:.75rem 1.25rem;border-top:1px solid var(--border);
+                font-size:10px;color:var(--muted);line-height:1.5}
 
-.sidebar-footer{padding:1rem 1.25rem;border-top:1px solid var(--border);
-                font-size:10px;color:var(--muted);line-height:1.6}
-#last-updated{color:var(--muted)}
+/* MAIN */
+.main{margin-left:220px}
+.page{display:none;padding:2rem 2.5rem;min-height:100vh}
+.page.active{display:block}
 
-/* ── Main content ────────────────────────────────────────────── */
-.main{margin-left:220px;min-height:100vh;overflow-y:auto}
-.page{display:none;padding:2rem 2.5rem;max-width:1300px}
-.page.active{display:block;animation:fadeIn .25s ease}
-@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-
-/* ── Page header ─────────────────────────────────────────────── */
-.page-header{margin-bottom:2rem}
+/* PAGE HEADER */
 .page-tag{font-size:10px;letter-spacing:.16em;color:var(--teal2);
           text-transform:uppercase;margin-bottom:6px}
-.page-title{font-family:var(--font-display);font-size:48px;
-            color:var(--text);letter-spacing:.03em;line-height:1}
-.page-sub{color:var(--muted);font-size:13px;margin-top:8px;font-weight:300}
+.page-title{font-family:var(--font-display);font-size:46px;
+            color:var(--text);line-height:1;margin-bottom:8px}
+.page-sub{color:var(--muted);font-size:13px;margin-bottom:2rem;font-weight:300}
 
-/* ── Metrics ──────────────────────────────────────────────────── */
-.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
-         gap:12px;margin-bottom:1.75rem}
+/* METRICS */
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
+         gap:12px;margin-bottom:1.5rem}
 .metric{background:var(--navy2);border:1px solid var(--border);
-        border-radius:10px;padding:1rem 1.25rem;position:relative;
-        overflow:hidden}
-.metric::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;
-                background:linear-gradient(90deg,var(--teal),transparent)}
+        border-radius:10px;padding:1rem 1.25rem}
 .metric-label{font-size:10px;letter-spacing:.1em;color:var(--muted);
               text-transform:uppercase;margin-bottom:6px}
-.metric-value{font-family:var(--font-display);font-size:30px;
-              color:var(--text);letter-spacing:.02em}
-.metric-sub{font-size:10px;color:var(--muted);margin-top:4px}
-.metric-value.green{color:var(--green)}
-.metric-value.red{color:var(--red)}
-.metric-value.amber{color:var(--amber)}
-.metric-value.teal{color:var(--teal2)}
-.metric-value.gold{color:var(--gold2)}
+.metric-value{font-family:var(--font-display);font-size:28px;color:var(--text)}
+.metric-sub{font-size:10px;color:var(--muted);margin-top:3px}
+.green{color:var(--green)}.red{color:var(--red)}.amber{color:var(--amber)}
+.teal{color:var(--teal2)}.gold{color:var(--gold2)}
 
-/* ── Cards ───────────────────────────────────────────────────── */
+/* CARDS */
 .card{background:var(--navy2);border:1px solid var(--border);
       border-radius:12px;padding:1.25rem 1.5rem;margin-bottom:1.25rem}
 .card-title{font-size:10px;letter-spacing:.12em;color:var(--muted);
             text-transform:uppercase;margin-bottom:1rem;
             padding-bottom:.75rem;border-bottom:1px solid var(--border)}
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem}
-.three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.25rem}
-@media(max-width:900px){.two-col,.three-col{grid-template-columns:1fr}}
 
-/* ── Tables ──────────────────────────────────────────────────── */
+/* HOME CARDS */
+.home-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin:1.5rem 0}
+.home-card{background:var(--navy2);border:1px solid var(--border);
+           border-radius:14px;padding:1.75rem;cursor:pointer;transition:all .2s}
+.home-card:hover{border-color:var(--teal);transform:translateY(-2px)}
+.home-card-icon{font-size:1.8rem;margin-bottom:.75rem}
+.home-card-title{font-family:var(--font-display);font-size:24px;
+                 color:var(--text);margin-bottom:.5rem}
+.home-card-desc{font-size:12.5px;color:var(--muted);line-height:1.6}
+
+/* HERO METRICS */
+.hero-metrics{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin:1.5rem 0}
+.hero-metric{text-align:center;padding:1.25rem .5rem;
+             background:var(--navy2);border:1px solid var(--border);border-radius:10px}
+.hero-val{font-family:var(--font-display);font-size:30px;color:var(--teal2)}
+.hero-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;
+          letter-spacing:.1em;margin-top:4px}
+
+/* TABLES */
 .table-wrap{overflow-x:auto}
 table{width:100%;border-collapse:collapse;font-size:12.5px}
-thead th{text-align:left;font-size:10px;letter-spacing:.1em;
-         color:var(--muted);text-transform:uppercase;
-         padding:.5rem .75rem .75rem 0;border-bottom:1px solid var(--border);
-         font-weight:500}
-tbody td{padding:.6rem .75rem .6rem 0;border-bottom:1px solid rgba(30,49,85,.5);
-         color:var(--text);vertical-align:middle}
+th{text-align:left;font-size:10px;letter-spacing:.1em;color:var(--muted);
+   text-transform:uppercase;padding:.5rem .75rem .75rem 0;
+   border-bottom:1px solid var(--border);font-weight:500}
+td{padding:.6rem .75rem .6rem 0;border-bottom:1px solid rgba(30,49,85,.5);
+   color:var(--text);vertical-align:middle}
 tbody tr:last-child td{border-bottom:none}
 tbody tr:hover{background:rgba(255,255,255,.02)}
 
-/* ── Badges ──────────────────────────────────────────────────── */
+/* BADGES */
 .badge{display:inline-block;font-size:10px;padding:2px 8px;
        border-radius:4px;font-weight:500;font-family:var(--font-mono)}
-.badge-red{background:rgba(220,68,68,.15);color:#F87171;
-           border:1px solid rgba(220,68,68,.3)}
-.badge-amber{background:rgba(245,158,11,.15);color:#FCD34D;
-             border:1px solid rgba(245,158,11,.3)}
-.badge-green{background:rgba(34,197,94,.15);color:#4ADE80;
-             border:1px solid rgba(34,197,94,.3)}
-.badge-teal{background:rgba(13,148,136,.15);color:var(--teal2);
-            border:1px solid rgba(13,148,136,.3)}
-.badge-blue{background:rgba(59,130,246,.15);color:#93C5FD;
-            border:1px solid rgba(59,130,246,.3)}
-.badge-gold{background:rgba(212,160,23,.15);color:var(--gold2);
-            border:1px solid rgba(212,160,23,.3)}
+.badge-red{background:rgba(220,68,68,.15);color:#F87171;border:1px solid rgba(220,68,68,.3)}
+.badge-amber{background:rgba(245,158,11,.15);color:#FCD34D;border:1px solid rgba(245,158,11,.3)}
+.badge-green{background:rgba(34,197,94,.15);color:#4ADE80;border:1px solid rgba(34,197,94,.3)}
+.badge-teal{background:rgba(13,148,136,.15);color:var(--teal2);border:1px solid rgba(13,148,136,.3)}
+.badge-blue{background:rgba(59,130,246,.15);color:#93C5FD;border:1px solid rgba(59,130,246,.3)}
+.badge-gold{background:rgba(212,160,23,.15);color:var(--gold2);border:1px solid rgba(212,160,23,.3)}
 
-/* ── Bars ─────────────────────────────────────────────────────── */
-.bar-wrap{background:var(--navy3);border-radius:3px;height:5px;
-          overflow:hidden;display:inline-block;vertical-align:middle;
-          margin-right:6px}
-.bar-fill{height:100%;border-radius:3px;background:var(--teal)}
-.bar-fill.gold{background:var(--gold)}
-.bar-fill.red{background:var(--red)}
-
-/* ── Filters ──────────────────────────────────────────────────── */
-.filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:1.25rem}
+/* FILTERS */
+.filters{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:1.25rem}
 .filter-group{display:flex;flex-direction:column;gap:4px}
-.filter-label{font-size:10px;letter-spacing:.1em;color:var(--muted);
-              text-transform:uppercase}
-select,input[type=range]{background:var(--navy2);border:1px solid var(--border);
-  border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;
-  font-family:var(--font-body);cursor:pointer;outline:none}
-select:focus,select:hover{border-color:var(--teal)}
-input[type=range]{padding:0;accent-color:var(--teal)}
+.filter-label{font-size:10px;letter-spacing:.1em;color:var(--muted);text-transform:uppercase}
+select{background:var(--navy2);border:1px solid var(--border);border-radius:6px;
+       color:var(--text);padding:6px 10px;font-size:12px;font-family:var(--font-body);
+       cursor:pointer;outline:none;min-width:160px}
+select:focus{border-color:var(--teal)}
+input[type=range]{accent-color:var(--teal);width:200px}
 
-/* ── Chart canvas ────────────────────────────────────────────── */
-.chart-container{position:relative;height:280px}
-canvas{max-height:100%}
+/* CHART */
+.chart-wrap{position:relative;height:260px}
 
-/* ── Score bar ───────────────────────────────────────────────── */
+/* SCORE BAR */
 .score-bar{display:flex;align-items:center;gap:8px}
-.score-track{flex:1;background:var(--navy3);border-radius:3px;
-             height:5px;overflow:hidden}
-.score-fill{height:100%;border-radius:3px;
-            background:linear-gradient(90deg,var(--teal),var(--gold))}
+.score-track{flex:1;background:var(--navy3);border-radius:3px;height:4px;overflow:hidden;max-width:80px}
+.score-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--teal),var(--gold))}
 
-/* ── Urgency card ────────────────────────────────────────────── */
-.urgency-card{background:rgba(220,68,68,.06);border:1px solid rgba(220,68,68,.2);
-              border-radius:8px;padding:.75rem 1rem;margin-bottom:8px}
-.urgency-title{font-size:12px;font-weight:500;color:var(--text)}
-.urgency-meta{font-size:11px;color:var(--muted);margin-top:3px}
-
-/* ── Tabs ────────────────────────────────────────────────────── */
-.tabs{display:flex;gap:4px;margin-bottom:1.25rem;
-      border-bottom:1px solid var(--border);padding-bottom:-1px}
-.tab-btn{padding:.5rem 1rem;font-size:12px;cursor:pointer;border:none;
+/* TABS */
+.tabs{display:flex;gap:0;margin-bottom:1.25rem;border-bottom:1px solid var(--border)}
+.tab-btn{padding:.6rem 1.25rem;font-size:12.5px;cursor:pointer;border:none;
          background:none;color:var(--muted);font-family:var(--font-body);
-         border-bottom:2px solid transparent;margin-bottom:-1px;
-         transition:all .15s}
+         border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s}
 .tab-btn:hover{color:var(--text)}
 .tab-btn.active{color:var(--teal2);border-bottom-color:var(--teal2)}
 .tab-panel{display:none}.tab-panel.active{display:block}
 
-/* ── Home cards ──────────────────────────────────────────────── */
-.home-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1.25rem;
-           margin-top:2rem}
-.home-card{background:var(--navy2);border:1px solid var(--border);
-           border-radius:14px;padding:1.75rem;cursor:pointer;
-           transition:all .2s;text-align:left}
-.home-card:hover{border-color:var(--teal);transform:translateY(-2px);
-                 box-shadow:0 8px 30px rgba(13,148,136,.12)}
-.home-card-icon{font-size:2rem;margin-bottom:.75rem}
-.home-card-title{font-family:var(--font-display);font-size:26px;
-                 color:var(--text);letter-spacing:.03em;margin-bottom:.5rem}
-.home-card-desc{font-size:12.5px;color:var(--muted);line-height:1.6}
-.hero-metrics{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;
-              margin:2rem 0}
-.hero-metric{text-align:center;padding:1.25rem .5rem;
-             background:var(--navy2);border:1px solid var(--border);
-             border-radius:10px}
-.hero-metric-val{font-family:var(--font-display);font-size:32px;
-                 color:var(--teal2);letter-spacing:.02em}
-.hero-metric-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;
-                 letter-spacing:.1em;margin-top:4px}
+/* URGENCY */
+.urgency-card{background:rgba(220,68,68,.06);border:1px solid rgba(220,68,68,.2);
+              border-radius:8px;padding:.75rem 1rem;margin-bottom:8px}
+.urgency-title{font-size:12.5px;font-weight:500}
+.urgency-meta{font-size:11px;color:var(--muted);margin-top:3px}
 
-/* ── Loading ─────────────────────────────────────────────────── */
-.loading{display:flex;align-items:center;gap:8px;color:var(--muted);
-         font-size:13px;padding:2rem}
-.spinner{width:16px;height:16px;border:2px solid var(--border);
-         border-top-color:var(--teal);border-radius:50%;
-         animation:spin .7s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-.error-msg{color:var(--red);font-size:13px;padding:1rem;
-           background:rgba(220,68,68,.08);border-radius:8px;
-           border:1px solid rgba(220,68,68,.2)}
-
-/* ── Footer ──────────────────────────────────────────────────── */
+/* FOOTER */
 .page-footer{font-size:10px;color:var(--border);text-align:center;
-             padding:2rem 0 1rem;margin-top:2rem;
-             border-top:1px solid var(--border)}
+             padding:2rem 0 1rem;margin-top:1.5rem;border-top:1px solid var(--border)}
 </style>
 </head>
 <body>
-
 <div class="app">
-<!-- ══════════════════════════════════ SIDEBAR ══ -->
+
+<!-- SIDEBAR -->
 <aside class="sidebar">
   <div class="brand">
     <div class="brand-tag">Nordic Kolektive Ventures</div>
-    <div class="brand-name">Demand<br><span class="brand-accent">Intelligence</span></div>
+    <div class="brand-name">DEMAND<br><span class="brand-accent">INTELLIGENCE</span></div>
     <div class="pipeline-dot">
       <div class="dot"></div>
       <span class="dot-label">May 2026 pipeline</span>
     </div>
   </div>
-
   <nav class="nav">
     <div class="nav-section">Overview</div>
-    <a class="nav-item active" onclick="nav('home',this)">
-      <span class="nav-icon">⌂</span> Home
-    </a>
-
+    <div class="nav-item active" onclick="nav('home',this)">⌂&nbsp;&nbsp;Home</div>
     <div class="nav-section">Analytics</div>
-    <a class="nav-item" onclick="nav('forecast',this)">
-      <span class="nav-icon">📈</span> Forecast Explorer
-    </a>
-    <a class="nav-item" onclick="nav('buyplan',this)">
-      <span class="nav-icon">🛒</span> Buy Plan
-    </a>
-    <a class="nav-item" onclick="nav('recs',this)">
-      <span class="nav-icon">💡</span> Recommendations
-      <span class="nav-badge" id="urgent-count">37</span>
-    </a>
-    <a class="nav-item" onclick="nav('accuracy',this)">
-      <span class="nav-icon">🎯</span> Accuracy Monitor
-    </a>
+    <div class="nav-item" onclick="nav('forecast',this)">📈&nbsp;&nbsp;Forecast Explorer</div>
+    <div class="nav-item" onclick="nav('buyplan',this)">🛒&nbsp;&nbsp;Buy Plan</div>
+    <div class="nav-item" onclick="nav('recs',this)">
+      💡&nbsp;&nbsp;Recommendations
+      <span class="nav-badge" id="urgent-badge">37</span>
+    </div>
+    <div class="nav-item" onclick="nav('accuracy',this)">🎯&nbsp;&nbsp;Accuracy Monitor</div>
   </nav>
-
   <div class="sidebar-footer">
     Nordic Kolektive Ventures<br>
     Demand Intelligence System<br>
-    <span id="last-updated">Loading…</span>
+    <span id="last-updated">02 May 2026, 17:49</span>
   </div>
 </aside>
 
-<!-- ══════════════════════════════════ MAIN ══ -->
+<!-- MAIN -->
 <main class="main">
 
-<!-- HOME ──────────────────────────────────── -->
+<!-- HOME -->
 <section class="page active" id="page-home">
-  <div class="page-header">
-    <div class="page-tag">Nordic Kolektive Ventures</div>
-    <div class="page-title">DEMAND<br>INTELLIGENCE</div>
-    <div class="page-sub">
-      AI-powered forecasting, buy plan generation and commercial recommendations
-      for B2B fashion wholesale · 200,710 training records · 43 months
-    </div>
-  </div>
+  <div class="page-tag">Nordic Kolektive Ventures</div>
+  <div class="page-title">DEMAND INTELLIGENCE</div>
+  <div class="page-sub">AI-powered forecasting, buy plan generation and commercial recommendations for B2B fashion wholesale · 200,710 training records · 43 months</div>
 
   <div class="hero-metrics">
-    <div class="hero-metric">
-      <div class="hero-metric-val">38</div>
-      <div class="hero-metric-lbl">Brands modelled</div>
-    </div>
-    <div class="hero-metric">
-      <div class="hero-metric-val" style="color:var(--gold2)">815K</div>
-      <div class="hero-metric-lbl">Annual buy qty</div>
-    </div>
-    <div class="hero-metric">
-      <div class="hero-metric-val" style="color:var(--green)">81%</div>
-      <div class="hero-metric-lbl">Inventory reduction</div>
-    </div>
-    <div class="hero-metric">
-      <div class="hero-metric-val">36K</div>
-      <div class="hero-metric-lbl">Total recommendations</div>
-    </div>
-    <div class="hero-metric">
-      <div class="hero-metric-val" style="color:var(--red)">48</div>
-      <div class="hero-metric-lbl">Urgent reorders</div>
-    </div>
+    <div class="hero-metric"><div class="hero-val">38</div><div class="hero-lbl">Brands Modelled</div></div>
+    <div class="hero-metric"><div class="hero-val" style="color:var(--gold2)">815K</div><div class="hero-lbl">Annual Buy Qty</div></div>
+    <div class="hero-metric"><div class="hero-val" style="color:var(--green)">81%</div><div class="hero-lbl">Inventory Reduction</div></div>
+    <div class="hero-metric"><div class="hero-val">36K</div><div class="hero-lbl">Total Recommendations</div></div>
+    <div class="hero-metric"><div class="hero-val" style="color:var(--red)">48</div><div class="hero-lbl">Urgent Reorders</div></div>
   </div>
 
   <div class="home-grid">
@@ -309,7 +214,7 @@ canvas{max-height:100%}
     <div class="home-card" onclick="nav('buyplan',null)">
       <div class="home-card-icon">🛒</div>
       <div class="home-card-title">BUY PLAN</div>
-      <div class="home-card-desc">Vendor-ready purchase orders with MOQ logic applied at style level, safety stock capped at 100% of P50, and four buyer flags. 81% reduction from fixing MOQ at SKU level.</div>
+      <div class="home-card-desc">Vendor-ready purchase orders with MOQ logic at style level, safety stock capped at 100% of P50, and four buyer flags. 81% reduction from fixing MOQ at SKU level.</div>
     </div>
     <div class="home-card" onclick="nav('recs',null)">
       <div class="home-card-icon">💡</div>
@@ -322,128 +227,91 @@ canvas{max-height:100%}
       <div class="home-card-desc">Brand-level forecast error vs industry benchmark of 20–40% MAPE. Walk-forward validation across 3 windows. LightGBM feature importance breakdown.</div>
     </div>
   </div>
-
-  <div class="page-footer">
-    Nordic Kolektive Ventures · Demand Intelligence ·
-    Powered by Google Cloud BigQuery · inventory-planning-model.Model
-  </div>
+  <div class="page-footer">Nordic Kolektive Ventures · Demand Intelligence · Google Cloud BigQuery · inventory-planning-model.Model</div>
 </section>
 
-<!-- FORECAST ────────────────────────────── -->
+<!-- FORECAST -->
 <section class="page" id="page-forecast">
-  <div class="page-header">
-    <div class="page-tag">Analytics</div>
-    <div class="page-title">FORECAST<br>EXPLORER</div>
-    <div class="page-sub">Monthly P10 / P50 / P90 demand · May 2026 – Apr 2027</div>
-  </div>
+  <div class="page-tag">Analytics</div>
+  <div class="page-title">FORECAST EXPLORER</div>
+  <div class="page-sub">Monthly P10 / P50 / P90 demand · May 2026 – Apr 2027</div>
   <div class="filters">
     <div class="filter-group">
       <div class="filter-label">Brand</div>
-      <select id="fc-brand" onchange="renderForecast()">
-        <option value="ALL">All brands</option>
-      </select>
+      <select id="fc-brand" onchange="renderForecast()"><option value="ALL">All brands</option></select>
     </div>
   </div>
-  <div class="metrics" id="fc-metrics">
-    <div class="metric"><div class="metric-label">Annual P50</div>
-      <div class="metric-value teal" id="fc-annual">—</div></div>
-    <div class="metric"><div class="metric-label">Monthly avg</div>
-      <div class="metric-value" id="fc-monthly">—</div></div>
-    <div class="metric"><div class="metric-label">Peak month</div>
-      <div class="metric-value" id="fc-peak-mo">—</div></div>
-    <div class="metric"><div class="metric-label">Peak demand</div>
-      <div class="metric-value" id="fc-peak-val">—</div></div>
+  <div class="metrics">
+    <div class="metric"><div class="metric-label">Annual P50</div><div class="metric-value teal" id="fc-annual">—</div></div>
+    <div class="metric"><div class="metric-label">Monthly avg</div><div class="metric-value" id="fc-monthly">—</div></div>
+    <div class="metric"><div class="metric-label">Peak month</div><div class="metric-value" id="fc-peak-mo">—</div></div>
+    <div class="metric"><div class="metric-label">Peak demand</div><div class="metric-value" id="fc-peak-val">—</div></div>
   </div>
   <div class="card">
     <div class="card-title">Monthly forecast — P10 / P50 / P90</div>
-    <div class="chart-container"><canvas id="fc-chart"></canvas></div>
+    <div class="chart-wrap"><canvas id="fc-chart"></canvas></div>
   </div>
   <div class="card">
     <div class="card-title">Forecast vs actuals (last 12 months)</div>
-    <div class="table-wrap" id="fc-table-wrap">
-      <div class="loading"><div class="spinner"></div>Loading…</div>
-    </div>
+    <div class="table-wrap" id="fc-val-table"><p style="color:var(--muted);font-size:13px">Loading…</p></div>
   </div>
 </section>
 
-<!-- BUY PLAN ───────────────────────────── -->
+<!-- BUY PLAN -->
 <section class="page" id="page-buyplan">
-  <div class="page-header">
-    <div class="page-tag">Analytics</div>
-    <div class="page-title">BUY<br>PLAN</div>
-    <div class="page-sub">Vendor-ready purchase orders · MOQ applied at style level · Safety stock capped at 2×P50</div>
-  </div>
-  <div class="metrics" id="bp-metrics">
-    <div class="metric"><div class="metric-label">Total buy qty</div>
-      <div class="metric-value teal" id="bp-total">815,405</div></div>
-    <div class="metric"><div class="metric-label">Safety stock</div>
-      <div class="metric-value" id="bp-ss">71.9%</div><div class="metric-sub">of P50 (target 50–80%)</div></div>
-    <div class="metric"><div class="metric-label">Actionable lines</div>
-      <div class="metric-value" id="bp-active">—</div></div>
-    <div class="metric"><div class="metric-label">Below MOQ</div>
-      <div class="metric-value amber" id="bp-moq">—</div></div>
-    <div class="metric"><div class="metric-label">Total lines</div>
-      <div class="metric-value" id="bp-lines">386K</div></div>
+  <div class="page-tag">Analytics</div>
+  <div class="page-title">BUY PLAN</div>
+  <div class="page-sub">Vendor-ready purchase orders · MOQ at style level · Safety stock capped at 2×P50</div>
+  <div class="metrics">
+    <div class="metric"><div class="metric-label">Total buy qty</div><div class="metric-value teal" id="bp-total">815,405</div></div>
+    <div class="metric"><div class="metric-label">Safety stock</div><div class="metric-value" id="bp-ss">71.9%</div><div class="metric-sub">of P50 · target 50–80%</div></div>
+    <div class="metric"><div class="metric-label">Actionable lines</div><div class="metric-value" id="bp-active">—</div></div>
+    <div class="metric"><div class="metric-label">Below MOQ</div><div class="metric-value amber" id="bp-moq">—</div></div>
+    <div class="metric"><div class="metric-label">Total lines</div><div class="metric-value" id="bp-lines">386K</div></div>
   </div>
   <div id="bp-health"></div>
   <div class="card">
     <div class="card-title">Buy qty vs P50 by brand (monthly avg)</div>
-    <div class="chart-container"><canvas id="bp-chart"></canvas></div>
+    <div class="chart-wrap"><canvas id="bp-chart"></canvas></div>
   </div>
   <div class="card">
     <div class="card-title">Brand-level buy plan</div>
-    <div class="table-wrap" id="bp-table-wrap">
-      <div class="loading"><div class="spinner"></div>Loading…</div>
-    </div>
+    <div class="table-wrap" id="bp-table"><p style="color:var(--muted);font-size:13px">Loading…</p></div>
   </div>
   <div class="card">
-    <div class="card-title">Flag reference</div>
-    <table>
-      <thead><tr><th>Flag</th><th>Meaning</th><th>Buyer action</th></tr></thead>
-      <tbody>
-        <tr><td><span class="badge badge-red">Zero forecast</span></td>
-            <td>Model predicts zero demand</td><td>Skip unless pipeline knowledge</td></tr>
-        <tr><td><span class="badge badge-amber">Below MOQ</span></td>
-            <td>Forecast below vendor minimum</td><td>Order MOQ anyway or skip</td></tr>
-        <tr><td><span class="badge badge-blue">Declining</span></td>
-            <td>Brand YoY &lt; −30%</td><td>Get sales approval before large buy</td></tr>
-        <tr><td><span class="badge badge-teal">New style</span></td>
-            <td>Fewer than 3 months history</td><td>Treat as indicative only</td></tr>
-        <tr><td><span class="badge badge-green">OK</span></td>
-            <td>No flags</td><td>Trust the model</td></tr>
-      </tbody>
-    </table>
+    <div class="card-title">Flag reference guide</div>
+    <table><thead><tr><th>Flag</th><th>Meaning</th><th>Buyer action</th></tr></thead>
+    <tbody>
+      <tr><td><span class="badge badge-red">Zero forecast</span></td><td>Model predicts zero demand</td><td>Skip unless pipeline knowledge</td></tr>
+      <tr><td><span class="badge badge-amber">Below MOQ</span></td><td>Forecast below vendor minimum</td><td>Order MOQ anyway or skip</td></tr>
+      <tr><td><span class="badge badge-blue">Declining</span></td><td>Brand YoY &lt; −30%</td><td>Get sales approval before large buy</td></tr>
+      <tr><td><span class="badge badge-teal">New style</span></td><td>Fewer than 3 months history</td><td>Treat as indicative only</td></tr>
+      <tr><td><span class="badge badge-green">OK</span></td><td>No flags</td><td>Trust the model</td></tr>
+    </tbody></table>
   </div>
 </section>
 
-<!-- RECOMMENDATIONS ────────────────────── -->
+<!-- RECOMMENDATIONS -->
 <section class="page" id="page-recs">
-  <div class="page-header">
-    <div class="page-tag">Analytics</div>
-    <div class="page-title">COMMERCIAL<br>INTELLIGENCE</div>
-    <div class="page-sub">Reorder alerts · Cross-sell opportunities · New style introductions</div>
-  </div>
+  <div class="page-tag">Analytics</div>
+  <div class="page-title">COMMERCIAL INTELLIGENCE</div>
+  <div class="page-sub">Reorder alerts · Cross-sell opportunities · New style introductions</div>
   <div class="metrics">
-    <div class="metric"><div class="metric-label">Urgent reorders</div>
-      <div class="metric-value red" id="rec-urgent">—</div></div>
-    <div class="metric"><div class="metric-label">Total reorder alerts</div>
-      <div class="metric-value" id="rec-reorder">—</div></div>
-    <div class="metric"><div class="metric-label">High cross-sell</div>
-      <div class="metric-value teal" id="rec-xsell">—</div></div>
-    <div class="metric"><div class="metric-label">High new-style recs</div>
-      <div class="metric-value gold" id="rec-newstyle">—</div></div>
+    <div class="metric"><div class="metric-label">Urgent reorders</div><div class="metric-value red" id="rec-urgent">37</div></div>
+    <div class="metric"><div class="metric-label">Total alerts</div><div class="metric-value" id="rec-total">48</div></div>
+    <div class="metric"><div class="metric-label">High cross-sell</div><div class="metric-value teal" id="rec-xsell">287</div></div>
+    <div class="metric"><div class="metric-label">High new-style</div><div class="metric-value gold" id="rec-newstyle">19,125</div></div>
   </div>
   <div class="tabs">
     <button class="tab-btn active" onclick="recTab('reorder',this)">⏰ Reorder alerts</button>
     <button class="tab-btn" onclick="recTab('crosssell',this)">↗ Cross-sell</button>
     <button class="tab-btn" onclick="recTab('newstyle',this)">⭐ New styles</button>
   </div>
-
   <div class="tab-panel active" id="tab-reorder">
     <div class="two-col">
       <div class="card">
         <div class="card-title">Priority distribution</div>
-        <div class="chart-container" style="height:220px"><canvas id="reorder-chart"></canvas></div>
+        <div class="chart-wrap" style="height:200px"><canvas id="reorder-chart"></canvas></div>
       </div>
       <div class="card">
         <div class="card-title">Most overdue — call this week</div>
@@ -452,82 +320,66 @@ canvas{max-height:100%}
     </div>
     <div class="card">
       <div class="card-title">All overdue reorders</div>
-      <div class="table-wrap" id="reorder-table"></div>
+      <div class="table-wrap" id="reorder-table"><p style="color:var(--muted);font-size:13px">Loading…</p></div>
     </div>
   </div>
-
   <div class="tab-panel" id="tab-crosssell">
     <div class="card">
-      <div class="card-title">Top cross-sell opportunities (HIGH priority · cosine similarity)</div>
-      <div class="table-wrap" id="xsell-table"></div>
+      <div class="card-title">Top cross-sell opportunities — HIGH priority</div>
+      <div class="table-wrap" id="xsell-table"><p style="color:var(--muted);font-size:13px">Loading…</p></div>
     </div>
   </div>
-
   <div class="tab-panel" id="tab-newstyle">
     <div class="filters">
       <div class="filter-group">
         <div class="filter-label">Min score: <span id="score-val">8</span></div>
-        <input type="range" id="score-slider" min="0" max="10" value="8" step="0.5"
+        <input type="range" min="0" max="10" value="8" step="0.5" id="score-slider"
                oninput="document.getElementById('score-val').textContent=this.value;renderNewStyle()">
       </div>
     </div>
     <div class="card">
-      <div class="card-title">New style recommendations (score + colour compatibility)</div>
-      <div class="table-wrap" id="newstyle-table"></div>
+      <div class="card-title">New style recommendations</div>
+      <div class="table-wrap" id="newstyle-table"><p style="color:var(--muted);font-size:13px">Loading…</p></div>
     </div>
   </div>
 </section>
 
-<!-- ACCURACY ────────────────────────────── -->
+<!-- ACCURACY -->
 <section class="page" id="page-accuracy">
-  <div class="page-header">
-    <div class="page-tag">Analytics</div>
-    <div class="page-title">ACCURACY<br>MONITOR</div>
-    <div class="page-sub">Forecast error by brand · Walk-forward validation · Feature importance</div>
-  </div>
+  <div class="page-tag">Analytics</div>
+  <div class="page-title">ACCURACY MONITOR</div>
+  <div class="page-sub">Forecast error by brand · Walk-forward validation · Feature importance</div>
   <div class="metrics">
-    <div class="metric"><div class="metric-label">Brands in range</div>
-      <div class="metric-value green" id="acc-in-range">37/38</div>
-      <div class="metric-sub">0.2–3.0× actual</div></div>
-    <div class="metric"><div class="metric-label">Best brand</div>
-      <div class="metric-value" id="acc-best-brand">—</div>
-      <div class="metric-sub" id="acc-best-err">error</div></div>
-    <div class="metric"><div class="metric-label">Median error</div>
-      <div class="metric-value" id="acc-median">—</div>
-      <div class="metric-sub">industry: 20–40%</div></div>
-    <div class="metric"><div class="metric-label">Industry standard</div>
-      <div class="metric-value amber">20–40%</div>
-      <div class="metric-sub">MAPE for fashion</div></div>
+    <div class="metric"><div class="metric-label">Brands in range</div><div class="metric-value green" id="acc-in-range">37/38</div><div class="metric-sub">0.2–3.0× actual</div></div>
+    <div class="metric"><div class="metric-label">Best brand</div><div class="metric-value" id="acc-best">—</div><div class="metric-sub" id="acc-best-err">—</div></div>
+    <div class="metric"><div class="metric-label">Median error</div><div class="metric-value" id="acc-median">—</div></div>
+    <div class="metric"><div class="metric-label">Industry standard</div><div class="metric-value amber">20–40%</div><div class="metric-sub">MAPE for fashion</div></div>
   </div>
-
-  <div class="card" style="background:rgba(13,148,136,.06);border-color:rgba(13,148,136,.2)">
-    <div style="font-size:12.5px;color:var(--text);line-height:1.6">
+  <div class="card" style="background:rgba(13,148,136,.06);border-color:rgba(13,148,136,.25)">
+    <div style="font-size:13px;line-height:1.6">
       <strong style="color:var(--teal2)">Industry context:</strong>
-      In B2B fashion wholesale, 20–40% MAPE on intermittent demand is the industry standard.
+      20–40% MAPE on intermittent fashion demand is the industry standard.
       Lambretta at <strong>11%</strong> and NORDA at <strong>7%</strong> exceed tier-1 platform benchmarks.
       97% of brands are within the 0.2–3.0× acceptable range.
     </div>
   </div>
-
   <div class="two-col">
     <div class="card">
-      <div class="card-title">Brand forecast error (%)</div>
-      <div class="chart-container"><canvas id="acc-error-chart"></canvas></div>
+      <div class="card-title">Forecast error by brand (%)</div>
+      <div class="chart-wrap"><canvas id="acc-error-chart"></canvas></div>
     </div>
     <div class="card">
-      <div class="card-title">Feature importance (LightGBM)</div>
-      <div class="chart-container"><canvas id="acc-feat-chart"></canvas></div>
+      <div class="card-title">LightGBM feature importance</div>
+      <div class="chart-wrap"><canvas id="acc-feat-chart"></canvas></div>
     </div>
   </div>
-
   <div class="card" id="wf-card" style="display:none">
     <div class="card-title">Walk-forward validation · Model vs naive baseline</div>
-    <div class="chart-container" style="height:220px"><canvas id="wf-chart"></canvas></div>
+    <div class="chart-wrap" style="height:200px"><canvas id="wf-chart"></canvas></div>
   </div>
-
   <div class="card">
     <div class="card-title">Full brand accuracy table</div>
-    <div class="table-wrap" id="acc-table"></div>
+    <div class="table-wrap" id="acc-table"><p style="color:var(--muted);font-size:13px">Loading…</p></div>
   </div>
 </section>
 
@@ -535,298 +387,229 @@ canvas{max-height:100%}
 </div>
 
 <script>
-/* ══════════════════════════════════════════════════════════════════
-   DATA LAYER — load JSON files exported from BigQuery
-══════════════════════════════════════════════════════════════════ */
-const DATA = {};
-const files = ['forecast','buyplan','recommendations','accuracy','meta'];
-let loadedCount = 0;
+/* ── DATA ── */
+const D={};
+const FILES=['forecast','buyplan','recommendations','accuracy','meta'];
+let loaded=0;
 
 async function loadAll(){
-  const promises = files.map(async name => {
-    try {
-      const r = await fetch(`data/${name}.json`);
-      if(!r.ok) throw new Error(`HTTP ${r.status}`);
-      DATA[name] = await r.json();
-    } catch(e) {
-      console.warn(`Failed to load ${name}.json — using demo data`);
-      DATA[name] = getDemoData(name);
-    }
-    loadedCount++;
-    if(loadedCount === files.length) initApp();
-  });
-  await Promise.all(promises);
+  for(const name of FILES){
+    try{
+      const r=await fetch('data/'+name+'.json');
+      D[name]=r.ok?await r.json():demo(name);
+    }catch(e){D[name]=demo(name);}
+    loaded++;
+  }
+  initAll();
 }
 
-function getDemoData(name){
-  /* Fallback demo data so site works even without JSON files */
-  const demos = {
-    meta: {last_updated:'1 May 2026, 06:00',pipeline:'May 2026'},
-    forecast: {
-      brands:['Lambretta','Original Penguin','CAT','BENCH','KICKERS','OSPREY LONDON','NORDA'],
-      monthly:[
-        ...['2026-05','2026-06','2026-07','2026-08','2026-09','2026-10',
-            '2026-11','2026-12','2027-01','2027-02','2027-03','2027-04'].flatMap(m=>
-          [{brand:'Lambretta',year_month:m,
-            p10:Math.round(500+Math.random()*200),
-            p50:Math.round(700+Math.random()*600),
-            p90:Math.round(1400+Math.random()*400)}])
-      ]
-    },
-    buyplan:{
-      kpis:{total_buy:815405,total_p50:454516,total_safety:326717,
-            actionable_lines:205562,below_moq_lines:66441,total_lines:386776},
-      brand_summary:[
-        {brand:'Original Penguin',buy_per_month:22892,p50_per_month:13960,safety_per_month:8522,ratio:1.64,active_lines:4373,below_moq_count:0},
-        {brand:'Lambretta',buy_per_month:12247,p50_per_month:7593,safety_per_month:4280,ratio:1.61,active_lines:2737,below_moq_count:0},
-        {brand:'CAT',buy_per_month:9116,p50_per_month:4390,safety_per_month:4190,ratio:2.08,active_lines:2755,below_moq_count:0},
-        {brand:'THE RAGGED PRIEST',buy_per_month:7767,p50_per_month:3915,safety_per_month:3153,ratio:1.98,active_lines:3291,below_moq_count:0},
-        {brand:'BENCH',buy_per_month:6600,p50_per_month:4024,safety_per_month:2504,ratio:1.64,active_lines:1078,below_moq_count:0},
-        {brand:'KICKERS',buy_per_month:3428,p50_per_month:1295,safety_per_month:2026,ratio:2.65,active_lines:673,below_moq_count:0},
-        {brand:'OSPREY LONDON',buy_per_month:1906,p50_per_month:866,safety_per_month:949,ratio:2.20,active_lines:519,below_moq_count:0},
-      ]
-    },
-    recommendations:{
-      counts:{reorder_urgent:37,reorder_total:48,xsell_high:287,newstyle_high:19125},
-      reorder:[
-        {customer:'LUXURY SOLE LTD',brand:'Scholl',last_order_date:'2024-10',overdue_months:16,avg_order_qty:20,priority:'URGENT'},
-        {customer:'Next Retail Ltd',brand:'NINE WEST',last_order_date:'2025-03',overdue_months:12,avg_order_qty:4,priority:'URGENT'},
-        {customer:'LUXURY SOLE LTD',brand:'Lambretta',last_order_date:'2025-03',overdue_months:12,avg_order_qty:27,priority:'URGENT'},
-        {customer:'Next Retail Ltd',brand:'NEW BALANCE',last_order_date:'2025-07',overdue_months:8,avg_order_qty:49,priority:'URGENT'},
-        {customer:'Union 22 Ltd',brand:'NORDA',last_order_date:'2025-08',overdue_months:7,avg_order_qty:4,priority:'DUE'},
-      ],
-      crosssell:[
-        {customer:'Avenue 85 Ltd',brand:'Original Penguin',confidence:27.8,similar_customers:5,priority:'HIGH'},
-        {customer:'NEXT GENERATION CLOTHING',brand:'Original Penguin',confidence:27.3,similar_customers:5,priority:'HIGH'},
-        {customer:'ALISONS LIMITED',brand:'ROCKPORT HERITAGE',confidence:21.1,similar_customers:8,priority:'HIGH'},
-        {customer:'NORTON BARRIE',brand:'Rockport Apparel',confidence:18.3,similar_customers:5,priority:'HIGH'},
-      ],
-      newstyle:[
-        {customer:'BELGAL TRADE',brand:'Lambretta',style:'LAM0025',score:10.1,colour_match_pct:83,priority:'HIGH'},
-        {customer:'TOWER BOOTS LONDON',brand:'CAT',style:'COLORADO',score:10.0,colour_match_pct:100,priority:'HIGH'},
-        {customer:'GARDINER BROS',brand:'CAT',style:'COLORADO',score:10.0,colour_match_pct:100,priority:'HIGH'},
-        {customer:'DESIGNERWEAR INT',brand:'CAT',style:'COLORADO',score:9.9,colour_match_pct:100,priority:'HIGH'},
-        {customer:'GILES UK LTD',brand:'CAT',style:'COLORADO',score:9.9,colour_match_pct:100,priority:'HIGH'},
-      ]
-    },
-    accuracy:{
-      validation:[
-        {brand:'Lambretta',forecast:7121,actual:8022,ratio:0.89,pct_error:11.2,status:'OK'},
-        {brand:'Original Penguin',forecast:18908,actual:14923,ratio:1.27,pct_error:26.7,status:'OK'},
-        {brand:'NORDA',forecast:549,actual:589,ratio:0.93,pct_error:6.8,status:'OK'},
-        {brand:'OSPREY LONDON',forecast:2029,actual:1414,ratio:1.43,pct_error:43.4,status:'OK'},
-        {brand:'BENCH',forecast:4874,actual:4874,ratio:1.00,pct_error:0,status:'OK'},
-        {brand:'KICKERS',forecast:1453,actual:1453,ratio:1.00,pct_error:0,status:'OK'},
-        {brand:'CAT',forecast:4991,actual:4991,ratio:1.00,pct_error:0,status:'OK'},
-      ],
-      walkforward:[
-        {window_label:'Sep 2024–Mar 2025',naive_mae:41.2,stat_mae:28.1},
-        {window_label:'Mar 2025–Sep 2025',naive_mae:32.9,stat_mae:19.4},
-        {window_label:'Sep 2025–Apr 2026',naive_mae:24.2,stat_mae:14.7},
-      ],
-      features:[
-        {feature:'stock_prev_month',importance:12046,pct:18.2},
-        {feature:'avg_unit_price',importance:8320,pct:12.6},
-        {feature:'seasonal_x_price',importance:7610,pct:11.5},
-        {feature:'seasonal_index',importance:5350,pct:8.1},
-        {feature:'adi_x_seasonal',importance:4990,pct:7.5},
-        {feature:'brand_seasonal_index',importance:4166,pct:6.3},
-        {feature:'grn_lag_1',importance:3309,pct:5.0},
-        {feature:'roll_mean_3',importance:3000,pct:4.5},
-        {feature:'cv2',importance:2800,pct:4.2},
-        {feature:'series_age_months',importance:2500,pct:3.8},
-      ]
-    }
+function demo(n){
+  if(n==='meta') return {last_updated:'02 May 2026, 17:49'};
+  if(n==='forecast') return {
+    brands:['Lambretta','Original Penguin','CAT','BENCH','KICKERS','OSPREY LONDON'],
+    monthly:['2026-05','2026-06','2026-07','2026-08','2026-09','2026-10','2026-11','2026-12','2027-01','2027-02','2027-03','2027-04'].flatMap(m=>[
+      {brand:'Lambretta',year_month:m,p10:Math.round(400+Math.random()*200),p50:Math.round(700+Math.random()*500),p90:Math.round(1300+Math.random()*400)},
+      {brand:'Original Penguin',year_month:m,p10:Math.round(800+Math.random()*400),p50:Math.round(1500+Math.random()*800),p90:Math.round(2500+Math.random()*600)},
+    ])
   };
-  return demos[name] || {};
+  if(n==='buyplan') return {
+    kpis:{total_buy:815405,total_p50:454516,total_safety:326717,actionable_lines:205562,below_moq_lines:66441,total_lines:386776},
+    brand_summary:[
+      {brand:'Original Penguin',buy_per_month:22892,p50_per_month:13960,safety_per_month:8522,ratio:1.64,active_lines:4373},
+      {brand:'Lambretta',buy_per_month:12247,p50_per_month:7593,safety_per_month:4280,ratio:1.61,active_lines:2737},
+      {brand:'CAT',buy_per_month:9116,p50_per_month:4390,safety_per_month:4190,ratio:2.08,active_lines:2755},
+      {brand:'BENCH',buy_per_month:6600,p50_per_month:4024,safety_per_month:2504,ratio:1.64,active_lines:1078},
+      {brand:'KICKERS',buy_per_month:3428,p50_per_month:1295,safety_per_month:2026,ratio:2.65,active_lines:673},
+      {brand:'OSPREY LONDON',buy_per_month:1906,p50_per_month:866,safety_per_month:949,ratio:2.20,active_lines:519},
+    ]
+  };
+  if(n==='recommendations') return {
+    counts:{reorder_urgent:37,reorder_total:48,xsell_high:287,newstyle_high:19125},
+    reorder:[
+      {customer:'LUXURY SOLE LTD',brand:'Scholl',last_order_month:'2024-10',months_overdue:16,avg_order_qty:20,priority:'URGENT'},
+      {customer:'Next Retail Ltd',brand:'NINE WEST',last_order_month:'2025-03',months_overdue:12,avg_order_qty:4,priority:'URGENT'},
+      {customer:'LUXURY SOLE LTD',brand:'Lambretta',last_order_month:'2025-03',months_overdue:12,avg_order_qty:27,priority:'URGENT'},
+      {customer:'Next Retail Ltd',brand:'NEW BALANCE',last_order_month:'2025-07',months_overdue:8,avg_order_qty:49,priority:'URGENT'},
+      {customer:'Union 22 Ltd',brand:'NORDA',last_order_month:'2025-08',months_overdue:7,avg_order_qty:4,priority:'DUE'},
+    ],
+    crosssell:[
+      {customer:'Avenue 85 Ltd',brand:'Original Penguin',confidence:27.8,similar_customers:5,priority:'HIGH'},
+      {customer:'ALISONS LIMITED',brand:'ROCKPORT HERITAGE',confidence:21.1,similar_customers:8,priority:'HIGH'},
+      {customer:'NORTON BARRIE',brand:'Rockport Apparel',confidence:18.3,similar_customers:5,priority:'HIGH'},
+    ],
+    newstyle:[
+      {customer:'BELGAL TRADE',brand:'Lambretta',style:'LAM0025',score:10.1,colour_match_pct:83,priority:'HIGH'},
+      {customer:'TOWER BOOTS',brand:'CAT',style:'COLORADO',score:10.0,colour_match_pct:100,priority:'HIGH'},
+      {customer:'GARDINER BROS',brand:'CAT',style:'COLORADO',score:10.0,colour_match_pct:100,priority:'HIGH'},
+    ]
+  };
+  if(n==='accuracy') return {
+    validation:[
+      {brand:'Lambretta',forecast:7121,actual:8022,ratio:0.89,pct_error:11.2,status:'OK'},
+      {brand:'Original Penguin',forecast:18908,actual:14923,ratio:1.27,pct_error:26.7,status:'OK'},
+      {brand:'NORDA',forecast:549,actual:589,ratio:0.93,pct_error:6.8,status:'OK'},
+      {brand:'BENCH',forecast:4874,actual:4874,ratio:1.00,pct_error:0,status:'OK'},
+      {brand:'KICKERS',forecast:1453,actual:1453,ratio:1.00,pct_error:0,status:'OK'},
+      {brand:'CAT',forecast:4991,actual:4991,ratio:1.00,pct_error:0,status:'OK'},
+    ],
+    walkforward:[
+      {window_label:'Sep 2024–Mar 2025',naive_mae:41.2,stat_mae:28.1},
+      {window_label:'Mar 2025–Sep 2025',naive_mae:32.9,stat_mae:19.4},
+      {window_label:'Sep 2025–Apr 2026',naive_mae:24.2,stat_mae:14.7},
+    ],
+    features:[
+      {feature:'stock_prev_month',pct:18.2},{feature:'avg_unit_price',pct:12.6},
+      {feature:'seasonal_x_price',pct:11.5},{feature:'seasonal_index',pct:8.1},
+      {feature:'adi_x_seasonal',pct:7.5},{feature:'grn_lag_1',pct:5.0},
+      {feature:'roll_mean_3',pct:4.5},{feature:'cv2',pct:4.2},
+    ]
+  };
+  return {};
 }
 
-/* ══════════════════════════════════════════════════════════════════
-   NAVIGATION
-══════════════════════════════════════════════════════════════════ */
-function nav(page, el){
+/* ── NAVIGATION ── */
+function nav(page,el){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('page-'+page).classList.add('active');
   if(el) el.classList.add('active');
-  else{
-    document.querySelectorAll('.nav-item').forEach(n=>{
-      if(n.getAttribute('onclick')?.includes(`'${page}'`)) n.classList.add('active');
-    });
-  }
+  else document.querySelectorAll('.nav-item').forEach(n=>{
+    if(n.getAttribute('onclick')?.includes("'"+page+"'")) n.classList.add('active');
+  });
 }
 
-/* ══════════════════════════════════════════════════════════════════
-   CHARTS (Chart.js defaults)
-══════════════════════════════════════════════════════════════════ */
+/* ── CHARTS ── */
 Chart.defaults.color='#6B8BAF';
 Chart.defaults.font.family="'DM Sans',sans-serif";
 Chart.defaults.font.size=11;
-Chart.defaults.plugins.legend.labels.boxWidth=10;
-const charts={};
-function destroyChart(id){if(charts[id]){charts[id].destroy();delete charts[id];}}
+const CH={};
+function dc(id){if(CH[id]){CH[id].destroy();delete CH[id];}}
 
-/* ══════════════════════════════════════════════════════════════════
-   FORECAST PAGE
-══════════════════════════════════════════════════════════════════ */
+/* ── FORECAST ── */
 function initForecast(){
   const sel=document.getElementById('fc-brand');
   sel.innerHTML='<option value="ALL">All brands</option>';
-  (DATA.forecast.brands||[]).forEach(b=>{
+  (D.forecast?.brands||[]).forEach(b=>{
     const o=document.createElement('option');o.value=b;o.textContent=b;sel.appendChild(o);
   });
   renderForecast();
-  renderValidationTable();
+  renderValTable();
 }
 
 function renderForecast(){
   const brand=document.getElementById('fc-brand').value;
-  const raw=DATA.forecast.monthly||[];
-  const filtered=brand==='ALL' ? raw : raw.filter(r=>r.brand===brand);
-
-  const months=[...new Set(filtered.map(r=>r.year_month))].sort();
-  const p10=months.map(m=>filtered.filter(r=>r.year_month===m).reduce((s,r)=>s+(r.p10||0),0));
-  const p50=months.map(m=>filtered.filter(r=>r.year_month===m).reduce((s,r)=>s+(r.p50||0),0));
-  const p90=months.map(m=>filtered.filter(r=>r.year_month===m).reduce((s,r)=>s+(r.p90||0),0));
-
-  const totalP50=p50.reduce((a,b)=>a+b,0);
-  const avgP50=Math.round(totalP50/Math.max(p50.length,1));
-  const peakIdx=p50.indexOf(Math.max(...p50));
-
-  document.getElementById('fc-annual').textContent=totalP50.toLocaleString();
-  document.getElementById('fc-monthly').textContent=avgP50.toLocaleString();
-  document.getElementById('fc-peak-mo').textContent=(months[peakIdx]||'—').slice(0,7);
-  document.getElementById('fc-peak-val').textContent=(p50[peakIdx]||0).toLocaleString();
-
-  destroyChart('fc');
-  const ctx=document.getElementById('fc-chart').getContext('2d');
-  charts.fc=new Chart(ctx,{
+  const raw=D.forecast?.monthly||[];
+  const data=brand==='ALL'?raw:raw.filter(r=>r.brand===brand);
+  const months=[...new Set(data.map(r=>r.year_month))].sort();
+  const p10=months.map(m=>data.filter(r=>r.year_month===m).reduce((s,r)=>s+(r.p10||0),0));
+  const p50=months.map(m=>data.filter(r=>r.year_month===m).reduce((s,r)=>s+(r.p50||0),0));
+  const p90=months.map(m=>data.filter(r=>r.year_month===m).reduce((s,r)=>s+(r.p90||0),0));
+  const tot=p50.reduce((a,b)=>a+b,0);
+  const pk=p50.indexOf(Math.max(...p50));
+  document.getElementById('fc-annual').textContent=tot.toLocaleString();
+  document.getElementById('fc-monthly').textContent=Math.round(tot/Math.max(p50.length,1)).toLocaleString();
+  document.getElementById('fc-peak-mo').textContent=(months[pk]||'—').slice(0,7);
+  document.getElementById('fc-peak-val').textContent=(p50[pk]||0).toLocaleString();
+  dc('fc');
+  CH.fc=new Chart(document.getElementById('fc-chart'),{
     type:'bar',
-    data:{
-      labels:months.map(m=>m.slice(0,7)),
-      datasets:[
-        {label:'P90',data:p90,backgroundColor:'rgba(13,148,136,.2)',borderRadius:2},
-        {label:'P50',data:p50,backgroundColor:'rgba(13,148,136,.7)',borderRadius:2},
-        {label:'P10',data:p10,backgroundColor:'rgba(13,148,136,.1)',borderRadius:2},
-      ]
-    },
-    options:{
-      responsive:true,maintainAspectRatio:false,
+    data:{labels:months.map(m=>m.slice(0,7)),datasets:[
+      {label:'P90',data:p90,backgroundColor:'rgba(13,148,136,.25)',borderRadius:2},
+      {label:'P50',data:p50,backgroundColor:'rgba(13,148,136,.75)',borderRadius:2},
+      {label:'P10',data:p10,backgroundColor:'rgba(13,148,136,.1)',borderRadius:2},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
       plugins:{legend:{position:'top'}},
-      scales:{
-        x:{grid:{color:'rgba(30,49,85,.5)'},ticks:{maxRotation:0}},
-        y:{grid:{color:'rgba(30,49,85,.5)'},ticks:{callback:v=>v.toLocaleString()}}
-      }
-    }
+      scales:{x:{grid:{color:'rgba(30,49,85,.5)'},ticks:{maxRotation:0}},
+              y:{grid:{color:'rgba(30,49,85,.5)'},ticks:{callback:v=>v.toLocaleString()}}}}
   });
 }
 
-function renderValidationTable(){
-  const val=DATA.accuracy?.validation||[];
-  const wrap=document.getElementById('fc-table-wrap');
-  if(!val.length){wrap.innerHTML='<div class="error-msg">No validation data</div>';return;}
-  wrap.innerHTML=`<table>
-    <thead><tr><th>Brand</th><th>Forecast/mo</th><th>Actual/mo</th><th>Ratio</th><th>Error %</th><th>Status</th></tr></thead>
+function renderValTable(){
+  const val=D.accuracy?.validation||[];
+  document.getElementById('fc-val-table').innerHTML=`<table>
+    <thead><tr><th>Brand</th><th>Forecast/mo</th><th>Actual/mo</th><th>Ratio</th><th>Error %</th></tr></thead>
     <tbody>${val.map(r=>{
-      const err=r.pct_error||0;
-      const cls=err<20?'badge-green':err<40?'badge-amber':'badge-red';
-      const ratioOk=r.ratio>=0.8&&r.ratio<=1.2;
-      return `<tr>
-        <td><strong>${r.brand}</strong></td>
+      const cls=r.pct_error<20?'badge-green':r.pct_error<40?'badge-amber':'badge-red';
+      return `<tr><td><strong>${r.brand}</strong></td>
         <td>${(r.forecast||0).toLocaleString()}</td>
         <td>${(r.actual||0).toLocaleString()}</td>
-        <td style="color:${ratioOk?'#4ADE80':'#FCD34D'}">${r.ratio}×</td>
-        <td><span class="badge ${cls}">${err.toFixed(1)}%</span></td>
-        <td><span class="badge badge-teal">${r.status||'OK'}</span></td>
-      </tr>`;
-    }).join('')}</tbody>
-  </table>`;
+        <td style="color:${r.ratio>=0.8&&r.ratio<=1.2?'#4ADE80':'#FCD34D'}">${r.ratio}×</td>
+        <td><span class="badge ${cls}">${(r.pct_error||0).toFixed(1)}%</span></td>
+      </tr>`;}).join('')}</tbody></table>`;
 }
 
-/* ══════════════════════════════════════════════════════════════════
-   BUY PLAN PAGE
-══════════════════════════════════════════════════════════════════ */
+/* ── BUY PLAN ── */
 function initBuyPlan(){
-  const kpi=DATA.buyplan?.kpis||{};
-  const p50=kpi.total_p50||1;
-  const ss=kpi.total_safety||0;
-  const ssPct=(ss/p50*100).toFixed(1);
-
-  document.getElementById('bp-total').textContent=(kpi.total_buy||0).toLocaleString();
-  document.getElementById('bp-ss').textContent=ssPct+'%';
-  document.getElementById('bp-active').textContent=(kpi.actionable_lines||0).toLocaleString();
-  document.getElementById('bp-moq').textContent=(kpi.below_moq_lines||0).toLocaleString();
-  document.getElementById('bp-lines').textContent=(kpi.total_lines||0).toLocaleString();
-
-  const health=document.getElementById('bp-health');
-  const ss_n=parseFloat(ssPct);
-  if(ss_n>=50&&ss_n<=80)
-    health.innerHTML=`<div class="card" style="background:rgba(34,197,94,.06);border-color:rgba(34,197,94,.2);margin-bottom:1.25rem;font-size:12.5px">✓ Safety stock (${ssPct}%) is within the industry target of 50–80% of P50.</div>`;
-  else
-    health.innerHTML=`<div class="card" style="background:rgba(245,158,11,.06);border-color:rgba(245,158,11,.2);margin-bottom:1.25rem;font-size:12.5px">⚠ Safety stock (${ssPct}%) is outside the 50–80% industry band.</div>`;
-
-  renderBuyPlanChart();
-  renderBuyPlanTable();
-}
-
-function renderBuyPlanChart(){
-  const brands=DATA.buyplan?.brand_summary||[];
-  destroyChart('bp');
-  const ctx=document.getElementById('bp-chart').getContext('2d');
-  charts.bp=new Chart(ctx,{
+  const k=D.buyplan?.kpis||{};
+  const p50=k.total_p50||1;
+  const ss=((k.total_safety||0)/p50*100).toFixed(1);
+  document.getElementById('bp-total').textContent=(k.total_buy||0).toLocaleString();
+  document.getElementById('bp-ss').textContent=ss+'%';
+  document.getElementById('bp-active').textContent=(k.actionable_lines||0).toLocaleString();
+  document.getElementById('bp-moq').textContent=(k.below_moq_lines||0).toLocaleString();
+  document.getElementById('bp-lines').textContent=(k.total_lines||0).toLocaleString();
+  const n=parseFloat(ss);
+  document.getElementById('bp-health').innerHTML=`<div class="card" style="background:rgba(${n>=50&&n<=80?'34,197,94':'245,158,11'},.06);border-color:rgba(${n>=50&&n<=80?'34,197,94':'245,158,11'},.25);margin-bottom:1.25rem;font-size:13px">
+    ${n>=50&&n<=80?'✓ Safety stock ('+ss+'%) is within the industry target of 50–80% of P50.':'⚠ Safety stock ('+ss+'%) is outside the 50–80% industry band.'}</div>`;
+  const brands=D.buyplan?.brand_summary||[];
+  dc('bp');
+  CH.bp=new Chart(document.getElementById('bp-chart'),{
     type:'bar',
-    data:{
-      labels:brands.map(b=>b.brand),
-      datasets:[
-        {label:'P50/mo',data:brands.map(b=>b.p50_per_month),backgroundColor:'rgba(13,148,136,.6)',borderRadius:3},
-        {label:'Safety/mo',data:brands.map(b=>b.safety_per_month),backgroundColor:'rgba(212,160,23,.5)',borderRadius:3},
-      ]
-    },
-    options:{
-      responsive:true,maintainAspectRatio:false,
+    data:{labels:brands.map(b=>b.brand),datasets:[
+      {label:'P50/mo',data:brands.map(b=>b.p50_per_month),backgroundColor:'rgba(13,148,136,.65)',borderRadius:3},
+      {label:'Safety/mo',data:brands.map(b=>b.safety_per_month),backgroundColor:'rgba(212,160,23,.55)',borderRadius:3},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
       plugins:{legend:{position:'top'}},
-      scales:{
-        x:{stacked:true,grid:{color:'rgba(30,49,85,.5)'},ticks:{maxRotation:35,font:{size:10}}},
-        y:{stacked:true,grid:{color:'rgba(30,49,85,.5)'},ticks:{callback:v=>v.toLocaleString()}}
-      }
-    }
+      scales:{x:{stacked:true,grid:{color:'rgba(30,49,85,.5)'},ticks:{maxRotation:35,font:{size:10}}},
+              y:{stacked:true,grid:{color:'rgba(30,49,85,.5)'},ticks:{callback:v=>v.toLocaleString()}}}}
   });
-}
-
-function renderBuyPlanTable(){
-  const brands=DATA.buyplan?.brand_summary||[];
-  const wrap=document.getElementById('bp-table-wrap');
-  wrap.innerHTML=`<table>
+  document.getElementById('bp-table').innerHTML=`<table>
     <thead><tr><th>Brand</th><th>Buy/mo</th><th>P50/mo</th><th>Safety/mo</th><th>Ratio</th><th>Active lines</th></tr></thead>
     <tbody>${brands.map(r=>{
-      const ratio=r.ratio||0;
-      const cls=ratio>=1&&ratio<=2.5?'badge-green':ratio>2.5?'badge-amber':'badge-red';
-      return `<tr>
-        <td><strong>${r.brand}</strong></td>
+      const cls=r.ratio>=1&&r.ratio<=2.5?'badge-green':r.ratio>2.5?'badge-amber':'badge-red';
+      return `<tr><td><strong>${r.brand}</strong></td>
         <td>${(r.buy_per_month||0).toLocaleString()}</td>
         <td>${(r.p50_per_month||0).toLocaleString()}</td>
         <td>${(r.safety_per_month||0).toLocaleString()}</td>
-        <td><span class="badge ${cls}">${ratio.toFixed(2)}×</span></td>
+        <td><span class="badge ${cls}">${(r.ratio||0).toFixed(2)}×</span></td>
         <td>${(r.active_lines||0).toLocaleString()}</td>
-      </tr>`;
-    }).join('')}</tbody>
-  </table>`;
+      </tr>`;}).join('')}</tbody></table>`;
 }
 
-/* ══════════════════════════════════════════════════════════════════
-   RECOMMENDATIONS PAGE
-══════════════════════════════════════════════════════════════════ */
+/* ── RECOMMENDATIONS ── */
 function initRecs(){
-  const c=DATA.recommendations?.counts||{};
+  const c=D.recommendations?.counts||{};
   document.getElementById('rec-urgent').textContent=c.reorder_urgent||0;
-  document.getElementById('rec-reorder').textContent=c.reorder_total||0;
+  document.getElementById('rec-total').textContent=c.reorder_total||0;
   document.getElementById('rec-xsell').textContent=(c.xsell_high||0).toLocaleString();
   document.getElementById('rec-newstyle').textContent=(c.newstyle_high||0).toLocaleString();
-  document.getElementById('urgent-count').textContent=c.reorder_urgent||0;
-
-  renderReorderChart();
-  renderUrgencyCards();
-  renderReorderTable();
+  document.getElementById('urgent-badge').textContent=c.reorder_urgent||0;
+  const ro=D.recommendations?.reorder||[];
+  const urgent=ro.filter(r=>r.priority==='URGENT').length;
+  const due=ro.filter(r=>r.priority==='DUE').length;
+  dc('reorder');
+  CH.reorder=new Chart(document.getElementById('reorder-chart'),{
+    type:'doughnut',
+    data:{labels:['URGENT','DUE'],datasets:[{data:[urgent,due],
+      backgroundColor:['rgba(220,68,68,.75)','rgba(245,158,11,.65)'],borderWidth:0}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}}}
+  });
+  document.getElementById('urgency-cards').innerHTML=ro.slice(0,4).map(r=>`
+    <div class="urgency-card">
+      <div class="urgency-title">${r.customer}</div>
+      <div class="urgency-meta">${r.brand} · <span style="color:${r.priority==='URGENT'?'#F87171':'#FCD34D'}">${r.months_overdue} months overdue</span> · avg ${Math.round(r.avg_order_qty||0)}u/order</div>
+    </div>`).join('');
+  document.getElementById('reorder-table').innerHTML=`<table>
+    <thead><tr><th>Customer</th><th>Brand</th><th>Last order</th><th>Overdue</th><th>Avg qty</th><th>Priority</th></tr></thead>
+    <tbody>${ro.map(r=>`<tr>
+      <td>${r.customer}</td><td>${r.brand}</td>
+      <td style="font-family:var(--font-mono);font-size:11px">${r.last_order_month||'—'}</td>
+      <td><strong style="color:${r.priority==='URGENT'?'#F87171':'#FCD34D'}">${r.months_overdue} mo</strong></td>
+      <td>${Math.round(r.avg_order_qty||0)}u</td>
+      <td><span class="badge ${r.priority==='URGENT'?'badge-red':'badge-amber'}">${r.priority}</span></td>
+    </tr>`).join('')}</tbody></table>`;
   renderCrossSell();
   renderNewStyle();
 }
@@ -838,218 +621,99 @@ function recTab(name,el){
   document.getElementById('tab-'+name).classList.add('active');
 }
 
-function renderReorderChart(){
-  const data=DATA.recommendations?.reorder||[];
-  const urgent=data.filter(r=>r.priority==='URGENT').length;
-  const due=data.filter(r=>r.priority==='DUE').length;
-  destroyChart('reorder');
-  const ctx=document.getElementById('reorder-chart').getContext('2d');
-  charts.reorder=new Chart(ctx,{
-    type:'doughnut',
-    data:{
-      labels:['URGENT','DUE'],
-      datasets:[{data:[urgent,due],
-        backgroundColor:['rgba(220,68,68,.7)','rgba(245,158,11,.6)'],
-        borderWidth:0}]
-    },
-    options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{position:'bottom'}}}
-  });
-}
-
-function renderUrgencyCards(){
-  const data=(DATA.recommendations?.reorder||[]).slice(0,4);
-  const el=document.getElementById('urgency-cards');
-  el.innerHTML=data.map(r=>`
-    <div class="urgency-card">
-      <div class="urgency-title">${r.customer}</div>
-      <div class="urgency-meta">${r.brand} · <span style="color:${r.priority==='URGENT'?'#F87171':'#FCD34D'}">${r.overdue_months} months overdue</span> · avg ${r.avg_order_qty}u/order</div>
-    </div>`).join('');
-}
-
-function renderReorderTable(){
-  const data=DATA.recommendations?.reorder||[];
-  document.getElementById('reorder-table').innerHTML=`<table>
-    <thead><tr><th>Customer</th><th>Brand</th><th>Last order</th><th>Overdue</th><th>Avg qty</th><th>Priority</th></tr></thead>
-    <tbody>${data.map(r=>`<tr>
-      <td>${r.customer}</td><td>${r.brand}</td>
-      <td style="font-family:var(--font-mono);font-size:11px">${r.last_order_date||'—'}</td>
-      <td><strong style="color:${r.priority==='URGENT'?'#F87171':'#FCD34D'}">${r.overdue_months} mo</strong></td>
-      <td>${r.avg_order_qty}u</td>
-      <td><span class="badge ${r.priority==='URGENT'?'badge-red':'badge-amber'}">${r.priority}</span></td>
-    </tr>`).join('')}</tbody>
-  </table>`;
-}
-
 function renderCrossSell(){
-  const data=DATA.recommendations?.crosssell||[];
+  const data=D.recommendations?.crosssell||[];
   document.getElementById('xsell-table').innerHTML=`<table>
     <thead><tr><th>Customer</th><th>Recommend brand</th><th>Confidence</th><th>Similar customers</th><th>Priority</th></tr></thead>
     <tbody>${data.map(r=>`<tr>
-      <td>${r.customer}</td>
-      <td><strong>${r.brand}</strong></td>
-      <td>
-        <div class="score-bar">
-          <div class="score-track"><div class="score-fill" style="width:${Math.min(r.confidence/30*100,100)}%"></div></div>
-          <span style="font-family:var(--font-mono);font-size:11px">${r.confidence}</span>
-        </div>
-      </td>
-      <td>${r.similar_customers} customers</td>
+      <td>${r.customer}</td><td><strong>${r.brand}</strong></td>
+      <td><div class="score-bar"><div class="score-track"><div class="score-fill" style="width:${Math.min((r.confidence||0)/30*100,100)}%"></div></div>
+      <span style="font-family:var(--font-mono);font-size:11px">${(r.confidence||0).toFixed(1)}</span></div></td>
+      <td>${r.similar_customers||0} customers</td>
       <td><span class="badge badge-teal">${r.priority}</span></td>
-    </tr>`).join('')}</tbody>
-  </table>`;
+    </tr>`).join('')}</tbody></table>`;
 }
 
 function renderNewStyle(){
-  const minScore=parseFloat(document.getElementById('score-slider')?.value||8);
-  const data=(DATA.recommendations?.newstyle||[]).filter(r=>r.score>=minScore);
+  const min=parseFloat(document.getElementById('score-slider')?.value||8);
+  const data=(D.recommendations?.newstyle||[]).filter(r=>(r.score||0)>=min);
   document.getElementById('newstyle-table').innerHTML=`<table>
     <thead><tr><th>Customer</th><th>Brand</th><th>Style</th><th>Score</th><th>Colour match</th><th>Priority</th></tr></thead>
     <tbody>${data.map(r=>`<tr>
-      <td>${r.customer}</td>
-      <td>${r.brand}</td>
+      <td>${r.customer}</td><td>${r.brand}</td>
       <td style="font-family:var(--font-mono);font-size:11px">${r.style}</td>
-      <td>
-        <div class="score-bar">
-          <div class="score-track"><div class="score-fill" style="width:${r.score*10}%"></div></div>
-          <strong>${r.score}</strong>
-        </div>
-      </td>
-      <td>
-        <div class="score-bar">
-          <div class="bar-wrap" style="width:60px"><div class="bar-fill" style="width:${r.colour_match_pct}%"></div></div>
-          ${r.colour_match_pct}%
-        </div>
-      </td>
+      <td><div class="score-bar"><div class="score-track"><div class="score-fill" style="width:${(r.score||0)*10}%"></div></div>
+      <strong>${(r.score||0).toFixed(1)}</strong></div></td>
+      <td>${(r.colour_match_pct||0).toFixed(0)}%</td>
       <td><span class="badge badge-gold">${r.priority}</span></td>
-    </tr>`).join('')}</tbody>
-  </table>`;
+    </tr>`).join('')}</tbody></table>`;
 }
 
-/* ══════════════════════════════════════════════════════════════════
-   ACCURACY PAGE
-══════════════════════════════════════════════════════════════════ */
+/* ── ACCURACY ── */
 function initAccuracy(){
-  const val=DATA.accuracy?.validation||[];
+  const val=D.accuracy?.validation||[];
   if(val.length){
-    const withActual=val.filter(r=>r.actual>0);
-    const inRange=withActual.filter(r=>r.ratio>=0.2&&r.ratio<=3.0).length;
-    const best=val.reduce((a,b)=>a.pct_error<b.pct_error?a:b);
-    const median=[...val].sort((a,b)=>a.pct_error-b.pct_error);
-    const med=median[Math.floor(median.length/2)];
-    document.getElementById('acc-in-range').textContent=`${inRange}/${withActual.length}`;
-    document.getElementById('acc-best-brand').textContent=best.brand;
-    document.getElementById('acc-best-err').textContent=`${best.pct_error?.toFixed(1)}% error`;
-    document.getElementById('acc-median').textContent=`${med?.pct_error?.toFixed(1)}%`;
+    const best=val.reduce((a,b)=>(a.pct_error||99)<(b.pct_error||99)?a:b);
+    const med=[...val].sort((a,b)=>(a.pct_error||0)-(b.pct_error||0))[Math.floor(val.length/2)];
+    const inR=val.filter(r=>r.ratio>=0.2&&r.ratio<=3.0).length;
+    document.getElementById('acc-in-range').textContent=inR+'/'+val.length;
+    document.getElementById('acc-best').textContent=best.brand;
+    document.getElementById('acc-best-err').textContent=(best.pct_error||0).toFixed(1)+'% error';
+    document.getElementById('acc-median').textContent=(med?.pct_error||0).toFixed(1)+'%';
   }
-  renderErrorChart();
-  renderFeatureChart();
-  renderWalkforward();
-  renderAccuracyTable();
-}
-
-function renderErrorChart(){
-  const val=DATA.accuracy?.validation||[];
   const labels=val.map(r=>r.brand);
   const errors=val.map(r=>r.pct_error||0);
-  const colors=errors.map(e=>e<20?'rgba(34,197,94,.7)':e<40?'rgba(245,158,11,.7)':'rgba(220,68,68,.7)');
-  destroyChart('accError');
-  const ctx=document.getElementById('acc-error-chart').getContext('2d');
-  charts.accError=new Chart(ctx,{
+  dc('accErr');
+  CH.accErr=new Chart(document.getElementById('acc-error-chart'),{
     type:'bar',
-    data:{labels,datasets:[{label:'Error %',data:errors,backgroundColor:colors,borderRadius:3}]},
-    options:{
-      responsive:true,maintainAspectRatio:false,
-      plugins:{
-        legend:{display:false},
-        annotation:{annotations:{
-          line20:{type:'line',yMin:20,yMax:20,borderColor:'rgba(34,197,94,.5)',borderDash:[4,4]},
-          line40:{type:'line',yMin:40,yMax:40,borderColor:'rgba(245,158,11,.5)',borderDash:[4,4]},
-        }}
-      },
-      scales:{
-        x:{grid:{color:'rgba(30,49,85,.5)'},ticks:{maxRotation:40,font:{size:9}}},
-        y:{grid:{color:'rgba(30,49,85,.5)'},ticks:{callback:v=>v+'%'}}
-      }
-    }
+    data:{labels,datasets:[{label:'Error %',data:errors,borderRadius:3,
+      backgroundColor:errors.map(e=>e<20?'rgba(34,197,94,.7)':e<40?'rgba(245,158,11,.7)':'rgba(220,68,68,.7)')}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{grid:{color:'rgba(30,49,85,.5)'},ticks:{maxRotation:35,font:{size:10}}},
+              y:{grid:{color:'rgba(30,49,85,.5)'},ticks:{callback:v=>v+'%'}}}}
   });
-}
-
-function renderFeatureChart(){
-  const feats=DATA.accuracy?.features||[];
-  if(!feats.length) return;
-  destroyChart('accFeat');
-  const ctx=document.getElementById('acc-feat-chart').getContext('2d');
-  charts.accFeat=new Chart(ctx,{
-    type:'bar',
-    data:{
-      labels:feats.map(f=>f.feature),
-      datasets:[{label:'Importance %',data:feats.map(f=>f.pct),
-        backgroundColor:'rgba(13,148,136,.6)',borderRadius:3}]
-    },
-    options:{
-      indexAxis:'y',responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false}},
-      scales:{
-        x:{grid:{color:'rgba(30,49,85,.5)'},ticks:{callback:v=>v+'%'}},
-        y:{grid:{display:false},ticks:{font:{size:10}}}
-      }
-    }
-  });
-}
-
-function renderWalkforward(){
-  const wf=DATA.accuracy?.walkforward||[];
-  if(!wf.length) return;
-  document.getElementById('wf-card').style.display='block';
-  destroyChart('wf');
-  const ctx=document.getElementById('wf-chart').getContext('2d');
-  charts.wf=new Chart(ctx,{
-    type:'bar',
-    data:{
-      labels:wf.map(r=>r.window_label),
-      datasets:[
+  const feats=D.accuracy?.features||[];
+  if(feats.length){
+    dc('accFeat');
+    CH.accFeat=new Chart(document.getElementById('acc-feat-chart'),{
+      type:'bar',
+      data:{labels:feats.map(f=>f.feature),datasets:[{label:'Importance %',data:feats.map(f=>f.pct),
+        backgroundColor:'rgba(13,148,136,.65)',borderRadius:3}]},
+      options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false}},
+        scales:{x:{grid:{color:'rgba(30,49,85,.5)'},ticks:{callback:v=>v+'%'}},
+                y:{grid:{display:false},ticks:{font:{size:10}}}}}
+    });
+  }
+  const wf=D.accuracy?.walkforward||[];
+  if(wf.length){
+    document.getElementById('wf-card').style.display='block';
+    dc('wf');
+    CH.wf=new Chart(document.getElementById('wf-chart'),{
+      type:'bar',
+      data:{labels:wf.map(r=>r.window_label),datasets:[
         {label:'Naive MAE',data:wf.map(r=>r.naive_mae),backgroundColor:'rgba(107,139,175,.4)',borderRadius:3},
         {label:'Model MAE',data:wf.map(r=>r.stat_mae),backgroundColor:'rgba(13,148,136,.7)',borderRadius:3},
-      ]
-    },
-    options:{
-      responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{position:'top'}},
-      scales:{
-        x:{grid:{display:false}},
-        y:{grid:{color:'rgba(30,49,85,.5)'},title:{display:true,text:'MAE (units)'}}
-      }
-    }
-  });
-}
-
-function renderAccuracyTable(){
-  const val=DATA.accuracy?.validation||[];
+      ]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top'}},
+        scales:{x:{grid:{display:false}},y:{grid:{color:'rgba(30,49,85,.5)'}}}}
+    });
+  }
   document.getElementById('acc-table').innerHTML=`<table>
     <thead><tr><th>Brand</th><th>Forecast/mo</th><th>Actual/mo</th><th>Ratio</th><th>Error %</th><th>Status</th></tr></thead>
     <tbody>${val.map(r=>{
-      const e=r.pct_error||0;
-      const cls=e<20?'badge-green':e<40?'badge-amber':'badge-red';
-      const rc=r.ratio>=0.8&&r.ratio<=1.2?'#4ADE80':r.ratio>=0.5&&r.ratio<=1.5?'#FCD34D':'#F87171';
-      return `<tr>
-        <td><strong>${r.brand}</strong></td>
+      const cls=(r.pct_error||0)<20?'badge-green':(r.pct_error||0)<40?'badge-amber':'badge-red';
+      return `<tr><td><strong>${r.brand}</strong></td>
         <td>${(r.forecast||0).toLocaleString()}</td>
         <td>${(r.actual||0).toLocaleString()}</td>
-        <td style="color:${rc};font-family:var(--font-mono)">${r.ratio}×</td>
-        <td><span class="badge ${cls}">${e.toFixed(1)}%</span></td>
+        <td style="color:${r.ratio>=0.8&&r.ratio<=1.2?'#4ADE80':'#FCD34D'};font-family:var(--font-mono)">${r.ratio}×</td>
+        <td><span class="badge ${cls}">${(r.pct_error||0).toFixed(1)}%</span></td>
         <td><span class="badge badge-teal">${r.status||'OK'}</span></td>
-      </tr>`;
-    }).join('')}</tbody>
-  </table>`;
+      </tr>`;}).join('')}</tbody></table>`;
 }
 
-/* ══════════════════════════════════════════════════════════════════
-   APP INIT
-══════════════════════════════════════════════════════════════════ */
-function initApp(){
-  if(DATA.meta?.last_updated)
-    document.getElementById('last-updated').textContent='Updated: '+DATA.meta.last_updated;
+function initAll(){
+  if(D.meta?.last_updated) document.getElementById('last-updated').textContent=D.meta.last_updated;
   initForecast();
   initBuyPlan();
   initRecs();
