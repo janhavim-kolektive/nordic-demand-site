@@ -1,5 +1,5 @@
 """
-export_data.py — Export BigQuery data to JSON for Netlify site
+export_data.py — Export BigQuery → JSON for Netlify site
 Run after every pipeline: python3 export_data.py
 """
 
@@ -20,7 +20,7 @@ os.makedirs("public/data", exist_ok=True)
 print("Exporting data from BigQuery...")
 
 # ── 1. FORECAST ────────────────────────────────────────────────────
-print("  [1/5] Forecast data...")
+print("  [1/6] Forecast monthly data...")
 brand_monthly = bq(f"""
     SELECT brand, year_month,
            ROUND(SUM(p10), 0)          AS p10,
@@ -30,88 +30,103 @@ brand_monthly = bq(f"""
     GROUP BY brand, year_month
     ORDER BY brand, year_month
 """)
-brand_list = bq(f"""
-    SELECT DISTINCT brand
-    FROM {T('forecasts_ensemble_reconciled')}
-    ORDER BY brand
+brand_list = bq(f"SELECT DISTINCT brand FROM {T('forecasts_ensemble_reconciled')} ORDER BY brand")
+
+# SKU level for colour/size breakdown (sample — limit to keep file small)
+print("  [1b] Forecast SKU colour/size...")
+sku = bq(f"""
+    SELECT brand, year_month, colour, size,
+           ROUND(SUM(p10), 1) AS p10,
+           ROUND(SUM(p50), 1) AS p50,
+           ROUND(SUM(p90), 1) AS p90
+    FROM {T('forecasts_sku')}
+    WHERE p50 > 0
+    GROUP BY brand, year_month, colour, size
+    ORDER BY brand, year_month, p50 DESC
+    LIMIT 50000
 """)
+
 with open("public/data/forecast.json", "w") as f:
     json.dump({
         "brands": brand_list["brand"].tolist(),
-        "monthly": brand_monthly.to_dict(orient="records")
+        "monthly": brand_monthly.to_dict(orient="records"),
+        "sku": sku.to_dict(orient="records")
     }, f)
+print(f"    forecast.json: {len(brand_monthly):,} monthly rows + {len(sku):,} SKU rows")
 
 # ── 2. BUY PLAN ────────────────────────────────────────────────────
-print("  [2/5] Buy plan data...")
+print("  [2/6] Buy plan data...")
 brand_summary = bq(f"""
     SELECT brand,
            ROUND(SUM(buy_qty)/12.0, 0)      AS buy_per_month,
            ROUND(SUM(forecast_p50)/12.0, 0) AS p50_per_month,
            ROUND(SUM(safety_stock)/12.0, 0) AS safety_per_month,
            ROUND(SAFE_DIVIDE(SUM(buy_qty), NULLIF(SUM(forecast_p50),0)), 2) AS ratio,
-           COUNTIF(buy_qty > 0)             AS active_lines,
-           COUNTIF(below_moq_flag = 1)      AS below_moq_count
+           COUNTIF(buy_qty > 0)             AS active_lines
     FROM {T('buy_plan')}
-    GROUP BY brand
-    ORDER BY buy_per_month DESC
-    LIMIT 20
+    GROUP BY brand ORDER BY buy_per_month DESC LIMIT 20
 """)
 bp_kpis = bq(f"""
-    SELECT
-        SUM(buy_qty)              AS total_buy,
-        SUM(forecast_p50)         AS total_p50,
-        SUM(safety_stock)         AS total_safety,
-        COUNTIF(buy_qty > 0)      AS actionable_lines,
-        COUNTIF(below_moq_flag=1) AS below_moq_lines,
-        COUNT(*)                  AS total_lines
+    SELECT SUM(buy_qty) AS total_buy, SUM(forecast_p50) AS total_p50,
+           SUM(safety_stock) AS total_safety,
+           COUNTIF(buy_qty > 0) AS actionable_lines,
+           COUNTIF(below_moq_flag=1) AS below_moq_lines,
+           COUNT(*) AS total_lines
     FROM {T('buy_plan')}
 """)
+
+# Buy plan lines for website filter/download (limit for JSON size)
+bp_lines = bq(f"""
+    SELECT brand, style, colour, size,
+           SUBSTR(year_month,1,7) AS month,
+           ROUND(forecast_p50,0) AS p50,
+           ROUND(forecast_p90,0) AS p90,
+           ROUND(buy_qty,0)      AS buy_qty,
+           moq,
+           CAST(new_style_flag AS INT64)      AS new_style,
+           CAST(below_moq_flag AS INT64)      AS below_moq,
+           CAST(zero_forecast_flag AS INT64)  AS zero_fcst
+    FROM {T('buy_plan')}
+    WHERE buy_qty > 0
+    ORDER BY brand, style, colour, size, month
+    LIMIT 80000
+""")
+
 with open("public/data/buyplan.json", "w") as f:
     json.dump({
         "kpis": bp_kpis.to_dict(orient="records")[0],
-        "brand_summary": brand_summary.to_dict(orient="records")
+        "brand_summary": brand_summary.to_dict(orient="records"),
+        "lines": bp_lines.to_dict(orient="records")
     }, f)
+print(f"    buyplan.json: {len(bp_lines):,} lines")
 
 # ── 3. RECOMMENDATIONS ─────────────────────────────────────────────
-print("  [3/5] Recommendations data...")
-
+print("  [3/6] Recommendations...")
 reorder = bq(f"""
-    SELECT customer, brand,
-           last_order_month,
-           months_overdue,
-           avg_order_qty,
-           priority
+    SELECT customer, brand, last_order_month, months_overdue,
+           avg_order_qty, priority
     FROM {T('recommendations_reorder')}
     WHERE priority IN ('URGENT','DUE')
-    ORDER BY months_overdue DESC
-    LIMIT 50
+    ORDER BY months_overdue DESC LIMIT 100
 """)
-
 crosssell = bq(f"""
-    SELECT customer,
-           recommended_brand AS brand,
-           ROUND(confidence_score, 1)  AS confidence,
-           similar_customers_buying    AS similar_customers,
+    SELECT customer, recommended_brand AS brand,
+           ROUND(confidence_score,1) AS confidence,
+           similar_customers_buying  AS similar_customers,
            priority
     FROM {T('recommendations_crosssell')}
     WHERE priority = 'HIGH'
-    ORDER BY confidence_score DESC
-    LIMIT 50
+    ORDER BY confidence_score DESC LIMIT 100
 """)
-
 newstyle = bq(f"""
-    SELECT customer, brand,
-           recommended_style           AS style,
-           ROUND(recommendation_score, 1) AS score,
-           ROUND(colour_compatibility * 100, 0) AS colour_match_pct,
+    SELECT customer, brand, recommended_style AS style,
+           ROUND(recommendation_score,1) AS score,
+           ROUND(colour_compatibility*100,0) AS colour_match_pct,
            priority
     FROM {T('recommendations_newstyle')}
-    WHERE priority = 'HIGH'
-      AND recommendation_score >= 8
-    ORDER BY recommendation_score DESC
-    LIMIT 100
+    WHERE priority = 'HIGH' AND recommendation_score >= 7
+    ORDER BY recommendation_score DESC LIMIT 200
 """)
-
 rec_counts = bq(f"""
     SELECT
         COUNTIF(rec_type='REORDER' AND priority='URGENT')  AS reorder_urgent,
@@ -128,61 +143,48 @@ with open("public/data/recommendations.json", "w") as f:
         "crosssell": crosssell.to_dict(orient="records"),
         "newstyle":  newstyle.to_dict(orient="records")
     }, f)
+print(f"    recommendations.json: {len(reorder)} reorder, {len(crosssell)} xsell, {len(newstyle)} newstyle")
 
 # ── 4. ACCURACY ─────────────────────────────────────────────────────
-print("  [4/5] Accuracy data...")
+print("  [4/6] Accuracy data...")
 validation = bq(f"""
     SELECT brand,
            ROUND(ens_monthly, 0)         AS forecast,
            ROUND(actual_monthly_avg, 0)  AS actual,
            ROUND(ratio, 2)               AS ratio,
-           ROUND(ABS(ens_monthly - actual_monthly_avg)
-                 / NULLIF(actual_monthly_avg,0) * 100, 1) AS pct_error,
+           ROUND(ABS(ens_monthly-actual_monthly_avg)
+                 / NULLIF(actual_monthly_avg,0)*100, 1) AS pct_error,
            status
     FROM {T('ensemble_brand_validation')}
     WHERE actual_monthly_avg > 0
     ORDER BY actual_monthly_avg DESC
 """)
 try:
-    walkforward = bq(f"""
-        SELECT window_label, naive_mae, stat_mae
-        FROM {T('mae_walkforward')}
-        ORDER BY window_label
-    """)
-    wf_data = walkforward.to_dict(orient="records")
-except Exception:
-    wf_data = []
+    wf = bq(f"SELECT window_label, naive_mae, stat_mae FROM {T('mae_walkforward')} ORDER BY window_label")
+    wf_data = wf.to_dict(orient="records")
+except: wf_data = []
 try:
-    features = bq(f"""
-        SELECT feature, importance,
-               ROUND(importance/SUM(importance) OVER()*100,1) AS pct
-        FROM {T('lgbm_feature_importance')}
-        ORDER BY importance DESC
-        LIMIT 15
+    feats = bq(f"""
+        SELECT feature, ROUND(importance/SUM(importance) OVER()*100,1) AS pct
+        FROM {T('lgbm_feature_importance')} ORDER BY importance DESC LIMIT 10
     """)
-    feat_data = features.to_dict(orient="records")
-except Exception:
-    feat_data = []
+    feat_data = feats.to_dict(orient="records")
+except: feat_data = []
 
 with open("public/data/accuracy.json", "w") as f:
-    json.dump({
-        "validation":  validation.to_dict(orient="records"),
-        "walkforward": wf_data,
-        "features":    feat_data
-    }, f)
+    json.dump({"validation": validation.to_dict(orient="records"),
+               "walkforward": wf_data, "features": feat_data}, f)
+print(f"    accuracy.json: {len(validation)} brands")
 
 # ── 5. META ─────────────────────────────────────────────────────────
-print("  [5/5] Meta...")
+print("  [5/6] Meta...")
 with open("public/data/meta.json", "w") as f:
     json.dump({
         "last_updated": datetime.now().strftime("%d %B %Y, %H:%M"),
-        "pipeline":     "May 2026",
-        "project":      PROJECT,
-        "dataset":      DATASET
+        "pipeline": "May 2026 pipeline",
+        "project": PROJECT, "dataset": DATASET
     }, f)
 
-print()
-print("Done! All 5 files written to public/data/")
-print("  forecast.json · buyplan.json · recommendations.json · accuracy.json · meta.json")
-print()
-print("Next: git add . && git commit -m 'update' && git push")
+print("\n✓ All 5 files written to public/data/")
+print("\nNext:")
+print("  git add . && git commit -m 'update data' && git push")
