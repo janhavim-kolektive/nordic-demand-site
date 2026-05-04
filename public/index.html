@@ -1106,6 +1106,157 @@ function downloadBuyPlan(){
   XLSX.writeFile(wb,fname);
 }
 
+
+/* ══ FORECAST EXPORTS ══════════════════════════════════════════ */
+function downloadForecastCSV(){
+  const brand=document.getElementById('fc-brand').value;
+  const month=document.getElementById('fc-month').value;
+  let d=D.forecast?.monthly||[];
+  if(brand!=='ALL') d=d.filter(r=>r.brand===brand);
+  if(month!=='ALL') d=d.filter(r=>r.year_month===month);
+  if(!d.length){alert('No forecast data for current selection.');return;}
+  const mos=[...new Set(d.map(r=>r.year_month))].sort();
+  const rows=mos.map(m=>{
+    const s=d.filter(r=>r.year_month===m);
+    return{'Month':m.slice(0,7),'Brand':brand==='ALL'?'All brands':brand,
+      'P10 Low':Math.round(s.reduce((a,r)=>a+(+r.p10||0),0)),
+      'P50 Expected':Math.round(s.reduce((a,r)=>a+(+r.p50||0),0)),
+      'P90 High':Math.round(s.reduce((a,r)=>a+(+r.p90||0),0))};
+  });
+  const hdr=Object.keys(rows[0]);
+  const csv=['# Nordic Kolektive Ventures — Demand Forecast',
+    '# Brand: '+(brand==='ALL'?'All brands':brand),
+    '# Generated: '+new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}),
+    '',hdr.join(','),...rows.map(r=>hdr.map(h=>r[h]).join(','))].join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download=('Forecast_'+(brand==='ALL'?'AllBrands':brand)+'_'+new Date().toISOString().slice(0,10)+'.csv').replace(/\s+/g,'_');
+  a.click();
+}
+
+function downloadForecastChart(){
+  const cv=document.getElementById('fc-chart');
+  if(!cv){alert('Chart not loaded yet.');return;}
+  const off=document.createElement('canvas');
+  off.width=cv.width; off.height=cv.height;
+  const ctx=off.getContext('2d');
+  ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,off.width,off.height);
+  ctx.drawImage(cv,0,0);
+  const brand=document.getElementById('fc-brand').value;
+  const a=document.createElement('a');
+  a.download=('ForecastChart_'+(brand==='ALL'?'AllBrands':brand)+'_'+new Date().toISOString().slice(0,10)+'.png').replace(/\s+/g,'_');
+  a.href=off.toDataURL('image/png');
+  a.click();
+}
+
+function downloadSkuCSV(){
+  const brand=document.getElementById('fc-brand').value;
+  const month=document.getElementById('fc-month').value;
+  if(brand==='ALL'||month==='ALL'){
+    alert('Select a specific brand and month first.');return;
+  }
+  const rows=(D.forecast?.sku||[]).filter(r=>r.brand===brand&&r.year_month===month);
+  if(!rows.length){alert('No colour/size data for this selection.');return;}
+  const hdr=['Brand','Month','Colour','Size','P10','P50','P90'];
+  const csv=['# Nordic Kolektive Ventures — Colour & Size Forecast',
+    '# Brand: '+brand+' | Month: '+month.slice(0,7),'',
+    hdr.join(','),...rows.sort((a,b)=>(+b.p50||0)-(+a.p50||0)).map(r=>[
+      r.brand,r.year_month.slice(0,7),r.colour,r.size,
+      Math.round(+r.p10||0),Math.round(+r.p50||0),Math.round(+r.p90||0)].join(','))].join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download=('ColourSize_'+brand+'_'+month.slice(0,7)+'.csv').replace(/\s+/g,'_');
+  a.click();
+}
+
+/* ══ RECOMMENDATION CUSTOMER FILTER & EXPORT ══════════════════ */
+function _recQ(){return(document.getElementById('rec-customer-search')?.value||'').trim().toLowerCase();}
+
+function filterRecsByCustomer(){
+  const q=_recQ();
+  const hint=document.getElementById('rec-customer-hint');
+  const ht=document.getElementById('rec-customer-hint-text');
+  if(q.length>=2){
+    const all=[...(D.recommendations?.reorder||[]),...(D.recommendations?.crosssell||[]),...(D.recommendations?.newstyle||[])];
+    const matches=[...new Set(all.map(r=>r.customer).filter(c=>c.toLowerCase().includes(q)))];
+    hint.style.display='flex';
+    if(matches.length===1) ht.textContent='Showing all recommendations for: '+matches[0];
+    else if(matches.length>1) ht.textContent=matches.length+' customers match — refine to one to download a plan';
+    else{ht.textContent='No customers match.'; hint.querySelector('button').style.display='none';}
+    if(matches.length===1) hint.querySelector('button').style.display='';
+    else hint.querySelector('button').style.display='none';
+  } else {hint.style.display='none';}
+  renderReorderTab(); renderCrossSell(); renderNewStyle();
+}
+
+function clearRecFilter(){
+  document.getElementById('rec-customer-search').value='';
+  document.getElementById('rec-customer-hint').style.display='none';
+  renderReorderTab(); renderCrossSell(); renderNewStyle();
+}
+
+function downloadCustomerPlan(){
+  const q=_recQ();
+  const reorder=(D.recommendations?.reorder||[]).filter(r=>r.customer.toLowerCase().includes(q));
+  const xsell=(D.recommendations?.crosssell||[]).filter(r=>r.customer.toLowerCase().includes(q));
+  const newstyle=(D.recommendations?.newstyle||[]).filter(r=>r.customer.toLowerCase().includes(q));
+  const customers=[...new Set([...reorder,...xsell,...newstyle].map(r=>r.customer))];
+  const cname=customers.length===1?customers[0]:'MultipleCustomers';
+  const wb=XLSX.utils.book_new();
+
+  // Cover sheet
+  const cover=[
+    ['Nordic Kolektive Ventures — AI Recommendation Plan'],
+    ['Customer:', cname],
+    ['Generated:', new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})],
+    ['Pipeline:', D.meta?.pipeline||'May 2026'],
+    [],
+    ['This plan is generated by the Demand Intelligence system based on actual purchase history.'],
+    ['Sections: 1. Reorder Alerts  2. Brand Opportunities  3. New Style Introductions'],
+  ];
+  const cws=XLSX.utils.aoa_to_sheet(cover);
+  cws['!cols']=[{wch:30},{wch:40}];
+  XLSX.utils.book_append_sheet(wb,'Cover',cws);
+
+  if(reorder.length){
+    const ws=XLSX.utils.json_to_sheet(reorder.map(r=>({
+      'Customer':r.customer,'Brand':r.brand,
+      'Last Ordered':r.last_order_month||'—',
+      'Months Overdue':Math.round(+r.months_overdue||0),
+      'Avg Order Qty':Math.round(+r.avg_order_qty||0),
+      'Priority':r.priority,
+      'Action':r.priority==='URGENT'?'Contact immediately — high churn risk':'Contact within 2 months',
+    })));
+    ws['!cols']=[{wch:28},{wch:18},{wch:14},{wch:15},{wch:15},{wch:10},{wch:40}];
+    XLSX.utils.book_append_sheet(wb,'1. Reorder Alerts',ws);
+  }
+
+  if(xsell.length){
+    const ws=XLSX.utils.json_to_sheet(xsell.map(r=>({
+      'Customer':r.customer,'Recommended Brand':r.brand,
+      'Confidence Score':+r.confidence||0,
+      'Similar Customers Buying':r.similar_customers||0,
+      'Priority':r.priority,
+    })));
+    ws['!cols']=[{wch:28},{wch:24},{wch:17},{wch:24},{wch:10}];
+    XLSX.utils.book_append_sheet(wb,'2. Brand Opportunities',ws);
+  }
+
+  if(newstyle.length){
+    const ws=XLSX.utils.json_to_sheet(newstyle.map(r=>({
+      'Customer':r.customer,'Brand':r.brand,'Style':r.style,
+      'Match Score':parseFloat(r.score||0).toFixed(1),
+      'Colour Match %':(+r.colour_match_pct||0)+'%',
+      'Priority':r.priority,
+    })));
+    ws['!cols']=[{wch:28},{wch:18},{wch:16},{wch:13},{wch:14},{wch:10}];
+    XLSX.utils.book_append_sheet(wb,'3. New Style Intros',ws);
+  }
+
+  const stamp=new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb,('RecPlan_'+cname+'_'+stamp+'.xlsx').replace(/\s+/g,'_'));
+}
+
 /* ══ RECOMMENDATIONS ══════════════════════════════════════════ */
 function initRecs(){
   const c=D.recommendations?.counts||{};
