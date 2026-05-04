@@ -32,16 +32,16 @@ brand_monthly = bq(f"""
 """)
 brand_list = bq(f"SELECT DISTINCT brand FROM {T('forecasts_ensemble_reconciled')} ORDER BY brand")
 
-# SKU level for colour/size breakdown (sample — limit to keep file small)
-print("  [1b] Forecast SKU colour/size...")
+# SKU level for style × colour × size breakdown
+print("  [1b] Forecast SKU style/colour/size...")
 sku = bq(f"""
-    SELECT brand, year_month, colour, size,
+    SELECT brand, year_month, style, colour, size,
            ROUND(SUM(p10), 1) AS p10,
            ROUND(SUM(p50), 1) AS p50,
            ROUND(SUM(p90), 1) AS p90
     FROM {T('forecasts_sku')}
     WHERE p50 > 0
-    GROUP BY brand, year_month, colour, size
+    GROUP BY brand, year_month, style, colour, size
     ORDER BY brand, year_month, p50 DESC
     LIMIT 50000
 """)
