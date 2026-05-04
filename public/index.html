@@ -34,7 +34,7 @@ html,body{min-height:100vh;background:var(--bg);color:var(--text);font-family:va
 .shell{display:flex;min-height:100vh}
 .sidebar{background:var(--ink);position:fixed;top:0;left:0;width:260px;height:100vh;
          display:flex;flex-direction:column;overflow-y:auto;z-index:100}
-.body{margin-left:260px;flex:1;min-width:0;overflow-x:hidden}
+.body{flex:1;min-width:0;overflow-x:hidden}
 
 /* ── Sidebar ──────────────────────────────────────────── */
 .brand-block{padding:1.5rem 1.25rem 1.25rem;border-bottom:1px solid rgba(255,255,255,.08)}
@@ -66,13 +66,13 @@ html,body{min-height:100vh;background:var(--bg);color:var(--text);font-family:va
 /* ── Top bar ──────────────────────────────────────────── */
 .topbar{background:var(--bg2);border-bottom:1px solid var(--border);
         padding:0 2rem;height:56px;display:flex;align-items:center;
-        justify-content:space-between;position:sticky;top:0;z-index:40;width:100%}
+        justify-content:space-between;position:sticky;top:0;z-index:40}
 .topbar-title{font-family:var(--font-display);font-size:15px;font-weight:600;color:var(--ink)}
 .topbar-meta{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:.5rem}
 .topbar-dot{width:6px;height:6px;border-radius:50%;background:var(--green)}
 
 /* ── Page content ─────────────────────────────────────── */
-.page-wrap{padding:1.75rem 2rem 3rem;width:100%}
+.page-wrap{padding:1.75rem 2rem 3rem}
 .page{display:none;width:100%}
 .page.active{display:block;animation:fade .2s ease;width:100%}
 @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
@@ -86,7 +86,7 @@ html,body{min-height:100vh;background:var(--bg);color:var(--text);font-family:va
 
 /* ── Stat cards ───────────────────────────────────────── */
 .stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
-          gap:1rem;margin-bottom:1.75rem;width:100%}
+          gap:1rem;margin-bottom:1.75rem}
 .stat-card{background:var(--bg2);border:1px solid var(--border);
            border-radius:var(--r);padding:1.1rem 1.25rem;
            box-shadow:var(--shadow)}
@@ -103,14 +103,14 @@ html,body{min-height:100vh;background:var(--bg);color:var(--text);font-family:va
 /* ── Cards ────────────────────────────────────────────── */
 .card{background:var(--bg2);border:1px solid var(--border);
       border-radius:var(--r-lg);padding:1.25rem 1.5rem;
-      margin-bottom:1.25rem;box-shadow:var(--shadow);width:100%}
+      margin-bottom:1.25rem;box-shadow:var(--shadow)}
 .card-header{display:flex;align-items:flex-start;justify-content:space-between;
              margin-bottom:1.1rem;padding-bottom:.9rem;
              border-bottom:1px solid var(--border)}
 .card-title{font-family:var(--font-display);font-size:14px;font-weight:600;color:var(--ink)}
 .card-sub{font-size:12px;color:var(--muted);margin-top:.2rem}
 .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;width:100%}
-.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.25rem;width:100%}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.25rem}
 
 /* ── Info box ─────────────────────────────────────────── */
 .info-box{border-radius:var(--r);padding:1rem 1.25rem;margin-bottom:1.25rem;
@@ -259,7 +259,7 @@ input[type=range]{accent-color:var(--teal);width:160px}
   <nav class="nav">
     <div class="nav-group-label">Overview</div>
     <div class="nav-link active" onclick="navTo('home',this)" data-page="home">
-      <span class="nav-icon">◈</span> Home
+      <span class="nav-icon">⌂</span> Home
     </div>
     <div class="nav-group-label">Analytics</div>
     <div class="nav-link" onclick="navTo('forecast',this)" data-page="forecast">
@@ -331,6 +331,7 @@ input[type=range]{accent-color:var(--teal);width:160px}
 
   <div class="nav-cards">
     <div class="nav-card" onclick="navTo('forecast',null)">
+      <div class="nav-card-icon">📈</div>
       <div class="nav-card-title">Forecast</div>
       <div class="nav-card-desc">
         See how much demand is expected for any brand, style, colour or size
@@ -343,6 +344,7 @@ input[type=range]{accent-color:var(--teal);width:160px}
       </div>
     </div>
     <div class="nav-card" onclick="navTo('buyplan',null)">
+      <div class="nav-card-icon">🛒</div>
       <div class="nav-card-title">Buy Plan & Orders</div>
       <div class="nav-card-desc">
         Filter by brand, month and style to see exactly how many units to
@@ -355,6 +357,7 @@ input[type=range]{accent-color:var(--teal);width:160px}
       </div>
     </div>
     <div class="nav-card" onclick="navTo('recs',null)">
+      <div class="nav-card-icon">💡</div>
       <div class="nav-card-title">Recommendations</div>
       <div class="nav-card-desc">
         Three types of alerts for your sales team: which customers need to
@@ -367,6 +370,7 @@ input[type=range]{accent-color:var(--teal);width:160px}
       </div>
     </div>
     <div class="nav-card" onclick="navTo('accuracy',null)">
+      <div class="nav-card-icon">🎯</div>
       <div class="nav-card-title">Accuracy</div>
       <div class="nav-card-desc">
         See how accurate the AI forecasts are for each brand.
@@ -433,14 +437,14 @@ input[type=range]{accent-color:var(--teal);width:160px}
     <div class="chart-box"><canvas id="fc-chart"></canvas></div>
   </div>
 
-  <div class="card">
-    <div class="card-header">
+      <div class="card-header">
       <div>
-        <div class="card-title">Colour & size breakdown</div>
-        <div class="card-sub">Select a brand and month above to see colour/size split</div>
+        <div class="card-title">Style × Colour × Size breakdown</div>
+        <div class="card-sub">Select a brand above — optionally filter by month for a specific period</div>
       </div>
     </div>
     <div class="info-box teal">
+      <span class="info-icon">ℹ️</span>
       <div>Colour and size splits are based on what each customer has historically ordered.
       A customer who mostly buys Navy will see Navy as their largest colour allocation.</div>
     </div>
@@ -470,6 +474,7 @@ input[type=range]{accent-color:var(--teal);width:160px}
   </div>
 
   <div class="info-box blue">
+    <span class="info-icon">💡</span>
     <div><strong>How to use this:</strong> Select the brand(s) and month(s) you want to order for.
     Click <strong>Download Order Sheet</strong> to get an Excel file ready to send to your vendor.
     The buy quantities already include a safety buffer — you don't need to add extra.</div>
@@ -499,7 +504,7 @@ input[type=range]{accent-color:var(--teal);width:160px}
     </div>
     <div class="filter-group" style="justify-content:flex-end">
       <div class="filter-label">&nbsp;</div>
-      <button class="btn btn-primary" onclick="downloadBuyPlan()">Download Order Sheet</button>
+      <button class="btn btn-primary" onclick="downloadBuyPlan()">⬇ Download Order Sheet</button>
     </div>
   </div>
 
@@ -532,7 +537,7 @@ input[type=range]{accent-color:var(--teal);width:160px}
         <div class="card-title">Order lines</div>
         <div class="card-sub">Showing up to 500 rows · Download for full dataset</div>
       </div>
-      <button class="btn btn-outline btn-sm" onclick="downloadBuyPlan()">Download Excel</button>
+      <button class="btn btn-outline btn-sm" onclick="downloadBuyPlan()">⬇ Excel</button>
     </div>
     <div class="table-wrap" id="bp-table"><div class="loading-text">Loading…</div></div>
   </div>
@@ -543,10 +548,12 @@ input[type=range]{accent-color:var(--teal);width:160px}
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
       <div class="info-box amber" style="margin:0">
+        <span class="info-icon">⚠️</span>
         <div><strong>Below MOQ:</strong> The AI predicts you'll sell less than the vendor's
         minimum order. You can still order — but decide whether it's worth the risk.</div>
       </div>
       <div class="info-box teal" style="margin:0">
+        <span class="info-icon">🆕</span>
         <div><strong>New Style:</strong> This style has fewer than 3 months of sales data.
         The forecast is less reliable — treat it as an indicative guide only.</div>
       </div>
@@ -567,36 +574,37 @@ input[type=range]{accent-color:var(--teal);width:160px}
 
   <div class="stat-row">
     <div class="stat-card">
-      <div class="stat-label">Call Immediately</div>
+      <div class="stat-label">🚨 Call Immediately</div>
       <div class="stat-value red" id="rec-urgent">—</div>
       <div class="stat-sub">Accounts overdue by 1+ order cycle</div>
     </div>
     <div class="stat-card">
-      <div class="stat-label">Due to Reorder</div>
+      <div class="stat-label">⏰ Due to Reorder</div>
       <div class="stat-value amber" id="rec-due">—</div>
       <div class="stat-sub">Within 2 months of expected date</div>
     </div>
     <div class="stat-card">
-      <div class="stat-label">Cross-sell Opps</div>
+      <div class="stat-label">↗ Cross-sell Opps</div>
       <div class="stat-value teal" id="rec-xsell">—</div>
       <div class="stat-sub">High-confidence brand pitches</div>
     </div>
     <div class="stat-card">
-      <div class="stat-label">New Style Intros</div>
+      <div class="stat-label">⭐ New Style Intros</div>
       <div class="stat-value" id="rec-newstyle">—</div>
       <div class="stat-sub">High-priority style recommendations</div>
     </div>
   </div>
 
   <div class="tab-nav">
-    <button class="tab-btn active" onclick="recTab('reorder',this)">Reorder Alerts</button>
-    <button class="tab-btn" onclick="recTab('crosssell',this)">Brand Cross-sell</button>
-    <button class="tab-btn" onclick="recTab('newstyle',this)">New Styles</button>
+    <button class="tab-btn active" onclick="recTab('reorder',this)">⏰ Reorder Alerts</button>
+    <button class="tab-btn" onclick="recTab('crosssell',this)">↗ Brand Cross-sell</button>
+    <button class="tab-btn" onclick="recTab('newstyle',this)">⭐ New Styles</button>
   </div>
 
   <!-- REORDER TAB -->
   <div class="tab-pane active" id="tab-reorder">
     <div class="info-box red">
+      <span class="info-icon">🚨</span>
       <div>
         <strong>What this means:</strong> These customers bought a brand regularly,
         but haven't ordered recently. Based on how often they normally order,
@@ -625,6 +633,7 @@ input[type=range]{accent-color:var(--teal);width:160px}
   <!-- CROSSSELL TAB -->
   <div class="tab-pane" id="tab-crosssell">
     <div class="info-box teal">
+      <span class="info-icon">💡</span>
       <div>
         <strong>How this works:</strong> The AI finds customers who have similar buying
         patterns and looks at what those similar customers are buying that this customer
@@ -644,6 +653,7 @@ input[type=range]{accent-color:var(--teal);width:160px}
   <!-- NEWSTYLE TAB -->
   <div class="tab-pane" id="tab-newstyle">
     <div class="info-box blue">
+      <span class="info-icon">⭐</span>
       <div>
         <strong>How this works:</strong> For customers already buying a brand,
         the AI scores styles they haven't tried yet. The score is based on
@@ -682,6 +692,7 @@ input[type=range]{accent-color:var(--teal);width:160px}
   </div>
 
   <div class="info-box green">
+    <span class="info-icon">✅</span>
     <div>
       <strong>Industry context:</strong> In B2B fashion wholesale, a forecast error of
       20–40% is considered normal and acceptable — because orders are unpredictable
@@ -731,6 +742,7 @@ input[type=range]{accent-color:var(--teal);width:160px}
   </div>
 
   <div class="info-box amber">
+    <span class="info-icon">⚠️</span>
     <div>
       <strong>Why are CAT and BENCH errors high?</strong>
       Both brands have a small number of customers who place huge one-off clearance
@@ -860,24 +872,49 @@ function renderForecast(){
 function renderSkuTable(brand, month){
   const sku=D.forecast?.sku||[];
   const wrap=document.getElementById('fc-sku-table');
-  if(brand==='ALL'||month==='ALL'){
-    wrap.innerHTML='<div class="loading-text">Select a specific brand and month to see colour & size detail.</div>';
+  if(brand==='ALL'){
+    wrap.innerHTML='<div class="loading-text">Select a specific brand and month above to see the style · colour · size breakdown.</div>';
     return;
   }
-  const rows=sku.filter(r=>r.brand===brand&&r.year_month===month);
+  let rows=sku.filter(r=>r.brand===brand);
+  if(month!=='ALL') rows=rows.filter(r=>r.year_month===month||r.year_month===month+'-01');
   if(!rows.length){
-    wrap.innerHTML='<div class="loading-text">No colour/size data for this selection.</div>';
+    wrap.innerHTML='<div class="loading-text">No style/colour/size data found. Try selecting a specific month.</div>';
     return;
   }
-  wrap.innerHTML=`<table>
-    <thead><tr><th>Colour</th><th>Size</th><th>P10 (Low)</th><th>P50 (Expected)</th><th>P90 (High)</th></tr></thead>
-    <tbody>${rows.sort((a,b)=>(+b.p50||0)-(+a.p50||0)).map(r=>`<tr>
-      <td>${r.colour}</td><td class="mono">${r.size}</td>
-      <td>${Math.round(+r.p10||0)}</td>
-      <td><strong>${Math.round(+r.p50||0)}</strong></td>
-      <td>${Math.round(+r.p90||0)}</td>
-    </tr>`).join('')}</tbody>
-  </table>`;
+  // Group by style → colour → size, summing p50 across customers
+  const grouped={};
+  rows.forEach(r=>{
+    const key=`${r.style||'—'}|||${r.colour||'—'}|||${r.size||'—'}`;
+    if(!grouped[key]) grouped[key]={style:r.style||'—',colour:r.colour||'—',size:r.size||'—',p10:0,p50:0,p90:0};
+    grouped[key].p10+=(+r.p10||0);
+    grouped[key].p50+=(+r.p50||0);
+    grouped[key].p90+=(+r.p90||0);
+  });
+  const agg=Object.values(grouped).sort((a,b)=>b.p50-a.p50);
+  wrap.innerHTML=`
+    <div style="margin-bottom:.75rem;font-size:12px;color:var(--muted)">
+      Showing ${agg.length.toLocaleString()} style × colour × size combinations
+      ${month==='ALL'?' across all months (summed)':`for ${month.slice(0,7)}`}
+    </div>
+    <table>
+      <thead><tr>
+        <th>Style</th><th>Colour</th><th>Size</th>
+        <th>P10 — Low estimate</th>
+        <th>P50 — Expected</th>
+        <th>P90 — High estimate</th>
+      </tr></thead>
+      <tbody>${agg.slice(0,200).map((r,i)=>`<tr style="background:${i%2===0?'var(--bg)':'var(--bg2)'}">
+        <td class="mono">${r.style}</td>
+        <td>${r.colour}</td>
+        <td class="mono">${r.size}</td>
+        <td>${Math.round(r.p10)}</td>
+        <td><strong>${Math.round(r.p50)}</strong></td>
+        <td>${Math.round(r.p90)}</td>
+      </tr>`).join('')}</tbody>
+    </table>
+    ${agg.length>200?`<div class="info-box teal" style="margin-top:.75rem"><span>ℹ</span><div>Showing top 200 of ${agg.length.toLocaleString()} rows by expected demand. Download the buy plan Excel for the full list.</div></div>`:''}
+  `;
 }
 
 function renderValTable(){
@@ -952,11 +989,12 @@ function renderBuyPlan(){
         <td>${(+r.p90||0).toLocaleString()}</td>
         <td><strong>${(+r.buy_qty||0).toLocaleString()}</strong></td>
         <td class="mono">${r.moq}</td>
-        <td>${flags.join(' ')||'<span class="tag tag-green">OK</span>'}</td>
+        <td>${flags.join(' ')||'<span class="tag tag-green">✓ OK</span>'}</td>
       </tr>`;}).join('')}</tbody>
   </table>`;
   if(rows.length>500){
     wrap.innerHTML+=`<div class="info-box teal" style="margin-top:.75rem">
+      <span class="info-icon">ℹ️</span>
       <div>Showing 500 of ${rows.length.toLocaleString()} rows. Download the Excel file to see all.</div>
     </div>`;
   }
@@ -968,24 +1006,57 @@ function downloadBuyPlan(){
   const style=document.getElementById('bp-style').value;
   const flag=document.getElementById('bp-flag').value;
   let rows=D.buyplan?.lines||[];
+  if(!rows.length){
+    alert('Buy plan data is still loading. Please wait a moment and try again.');
+    return;
+  }
   if(brand!=='ALL') rows=rows.filter(r=>r.brand===brand);
   if(month!=='ALL') rows=rows.filter(r=>r.month===month);
   if(style!=='ALL') rows=rows.filter(r=>r.style===style);
   if(flag==='ok') rows=rows.filter(r=>(+r.buy_qty||0)>0);
   if(flag==='below_moq') rows=rows.filter(r=>+r.below_moq);
   if(flag==='new_style') rows=rows.filter(r=>+r.new_style);
-  if(!rows.length){alert('No rows to download with current filters.');return;}
-  const ws=XLSX.utils.json_to_sheet(rows.map(r=>({
-    'Brand':r.brand,'Style':r.style,'Colour':r.colour,'Size':r.size,
-    'Month':r.month,'P50 Forecast':(+r.p50||0),'P90 Forecast':(+r.p90||0),
-    'Recommended Buy Qty':(+r.buy_qty||0),'MOQ':r.moq,
-    'New Style':+r.new_style?'Yes':'','Below MOQ':+r.below_moq?'Yes':'',
-  })));
-  const wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,'Buy Plan',ws);
+  if(!rows.length){alert('No rows match current filters. Adjust the filters and try again.');return;}
+
   const stamp=new Date().toISOString().slice(0,10);
-  const fname=`BuyPlan_${brand}_${month}_${stamp}.xlsx`.replace(/\s/g,'_');
-  XLSX.writeFile(wb,fname);
+  const fname='BuyPlan_'+(brand==='ALL'?'AllBrands':brand.replace(/\s/g,'_'))+'_'+(month==='ALL'?'AllMonths':month)+'_'+stamp;
+
+  // Try Excel first, fallback to CSV
+  try{
+    if(typeof XLSX==='undefined') throw new Error('XLSX not loaded');
+    const exportRows=rows.map(r=>({
+      'Brand':r.brand,'Style':r.style,'Colour':r.colour,'Size':r.size,
+      'Month':r.month,
+      'P50 Forecast (Expected)':(+r.p50||0),
+      'P90 Forecast (High)':(+r.p90||0),
+      'Recommended Buy Qty':(+r.buy_qty||0),
+      'MOQ':r.moq,
+      'New Style':+r.new_style?'Yes':'',
+      'Below MOQ':+r.below_moq?'Yes':'',
+    }));
+    const ws=XLSX.utils.json_to_sheet(exportRows);
+    // Column widths
+    ws['!cols']=[{wch:20},{wch:14},{wch:16},{wch:6},{wch:10},
+                 {wch:20},{wch:16},{wch:20},{wch:8},{wch:10},{wch:10}];
+    const wb=XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb,'Buy Plan',ws);
+    XLSX.writeFile(wb,fname+'.xlsx');
+  } catch(e){
+    // CSV fallback
+    const cols=['Brand','Style','Colour','Size','Month',
+                'P50 Forecast','P90 Forecast','Buy Qty','MOQ','New Style','Below MOQ'];
+    const csv=[cols.join(','),
+      ...rows.map(r=>[r.brand,r.style,r.colour,r.size,r.month,
+        (+r.p50||0),(+r.p90||0),(+r.buy_qty||0),r.moq,
+        +r.new_style?'Yes':'',+r.below_moq?'Yes':''].map(v=>`"${v}"`).join(','))
+    ].join('\n');
+    const a=document.createElement('a');
+    a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+    a.download=fname+'.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
 }
 
 /* ══ RECOMMENDATIONS ══════════════════════════════════════════ */
@@ -1023,7 +1094,7 @@ function renderReorderTab(){
   // Top 4 urgency cards
   const cards=ro.slice(0,4).map(r=>`
     <div class="rec-card">
-      <div class="rec-icon ${r.priority==='URGENT'?'red':'amber'}"></div>
+      <div class="rec-icon ${r.priority==='URGENT'?'red':'amber'}">${r.priority==='URGENT'?'🚨':'⏰'}</div>
       <div class="rec-body">
         <div class="rec-title">${r.customer}</div>
         <div class="rec-desc">
@@ -1049,7 +1120,7 @@ function renderReorderTab(){
       <td><strong style="color:${r.priority==='URGENT'?'var(--red)':'var(--amber)'}">${Math.round(+r.months_overdue||0)} months</strong></td>
       <td>${Math.round(+r.avg_order_qty||0)} units</td>
       <td><span class="tag ${r.priority==='URGENT'?'tag-red':'tag-amber'}">${r.priority}</span></td>
-      <td style="font-size:12px;color:var(--muted)">${r.priority==='URGENT'?'Call now':'Contact this month'}</td>
+      <td style="font-size:12px;color:var(--muted)">${r.priority==='URGENT'?'📞 Call now':'📅 Contact this month'}</td>
     </tr>`).join('')}</tbody></table>`
   :'<div class="loading-text">No reorder alerts.</div>';
 }
