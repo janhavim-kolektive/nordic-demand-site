@@ -5,7 +5,222 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Nordic Kolektive Ventures · Demand Intelligence</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js">
+/* ══ FIXED DOWNLOAD FUNCTIONS ══════════════════════════════════ */
+
+function downloadBuyPlan(){
+  var brand=document.getElementById('bp-brand').value;
+  var month=document.getElementById('bp-month').value;
+  var style=document.getElementById('bp-style').value;
+  var flag=document.getElementById('bp-flag').value;
+  var rows=D.buyplan?D.buyplan.lines||[]:[];
+  if(brand!=='ALL') rows=rows.filter(function(r){return r.brand===brand;});
+  if(month!=='ALL') rows=rows.filter(function(r){return r.month===month;});
+  if(style!=='ALL') rows=rows.filter(function(r){return r.style===style;});
+  if(flag==='ok') rows=rows.filter(function(r){return (+r.buy_qty||0)>0;});
+  if(flag==='below_moq') rows=rows.filter(function(r){return +r.below_moq;});
+  if(flag==='new_style') rows=rows.filter(function(r){return +r.new_style;});
+  if(!rows.length){alert('No rows to download with current filters.');return;}
+  var mapped=rows.map(function(r){return{
+    'Brand':r.brand,'Style':r.style,'Colour':r.colour,'Size':r.size,
+    'Month':r.month,'P50 Forecast':(+r.p50||0),'P90 Forecast':(+r.p90||0),
+    'Recommended Buy Qty':(+r.buy_qty||0),'MOQ':r.moq,
+    'New Style':+r.new_style?'Yes':'','Below MOQ':+r.below_moq?'Yes':'',
+  };});
+  var ws=XLSX.utils.json_to_sheet(mapped);
+  var wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,'Buy Plan',ws);
+  var stamp=new Date().toISOString().slice(0,10);
+  var fname=('BuyPlan_'+(brand==='ALL'?'AllBrands':brand)+'_'+(month==='ALL'?'AllMonths':month)+'_'+stamp+'.xlsx').replace(/\s+/g,'_');
+  XLSX.writeFile(wb,fname);
+}
+
+function downloadForecastCSV(){
+  var brand=document.getElementById('fc-brand').value;
+  var month=document.getElementById('fc-month').value;
+  var d=D.forecast?D.forecast.monthly||[]:[];
+  if(brand!=='ALL') d=d.filter(function(r){return r.brand===brand;});
+  if(month!=='ALL') d=d.filter(function(r){return r.year_month===month;});
+  if(!d.length){alert('No forecast data for current selection.');return;}
+  var mos=[...new Set(d.map(function(r){return r.year_month;}))].sort();
+  var rows=mos.map(function(m){
+    var s=d.filter(function(r){return r.year_month===m;});
+    return{
+      'Month':m.slice(0,7),
+      'Brand':brand==='ALL'?'All brands':brand,
+      'P10 Low':Math.round(s.reduce(function(a,r){return a+(+r.p10||0);},0)),
+      'P50 Expected':Math.round(s.reduce(function(a,r){return a+(+r.p50||0);},0)),
+      'P90 High':Math.round(s.reduce(function(a,r){return a+(+r.p90||0);},0))
+    };
+  });
+  var hdr=Object.keys(rows[0]);
+  var lines=['# Nordic Kolektive Ventures - Demand Forecast',
+    '# Brand: '+(brand==='ALL'?'All brands':brand),
+    '# Generated: '+new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}),
+    '',hdr.join(',')];
+  rows.forEach(function(r){lines.push(hdr.map(function(h){return r[h];}).join(','));});
+  var csv=lines.join('\n');
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download=('Forecast_'+(brand==='ALL'?'AllBrands':brand)+'_'+new Date().toISOString().slice(0,10)+'.csv').replace(/\s+/g,'_');
+  a.click();
+}
+
+function downloadForecastChart(){
+  var cv=document.getElementById('fc-chart');
+  if(!cv){alert('Chart not loaded yet.');return;}
+  var off=document.createElement('canvas');
+  off.width=cv.width; off.height=cv.height;
+  var ctx=off.getContext('2d');
+  ctx.fillStyle='#ffffff';
+  ctx.fillRect(0,0,off.width,off.height);
+  ctx.drawImage(cv,0,0);
+  var brand=document.getElementById('fc-brand').value;
+  var a=document.createElement('a');
+  a.download=('ForecastChart_'+(brand==='ALL'?'AllBrands':brand)+'_'+new Date().toISOString().slice(0,10)+'.png').replace(/\s+/g,'_');
+  a.href=off.toDataURL('image/png');
+  a.click();
+}
+
+function downloadSkuCSV(){
+  var brand=document.getElementById('fc-brand').value;
+  var month=document.getElementById('fc-month').value;
+  if(brand==='ALL'||month==='ALL'){alert('Select a specific brand and month first.');return;}
+  var rows=(D.forecast?D.forecast.sku||[]:[]).filter(function(r){return r.brand===brand&&r.year_month===month;});
+  if(!rows.length){alert('No style/colour/size data for this selection.');return;}
+  var hdr=['Style','Colour','Size','P10 Low','P50 Expected','P90 High'];
+  var lines=['# Nordic Kolektive Ventures - Style Colour Size Forecast',
+    '# Brand: '+brand+' | Month: '+month.slice(0,7),'',hdr.join(',')];
+  rows.slice().sort(function(a,b){return(+b.p50||0)-(+a.p50||0);}).forEach(function(r){
+    lines.push([r.style||'',r.colour,r.size,
+      Math.round(+r.p10||0),Math.round(+r.p50||0),Math.round(+r.p90||0)].join(','));
+  });
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([lines.join('\n')],{type:'text/csv'}));
+  a.download=('StyleColourSize_'+brand+'_'+month.slice(0,7)+'.csv').replace(/\s+/g,'_');
+  a.click();
+}
+
+function filterRecsByCustomer(){
+  var q=(document.getElementById('rec-customer-search')?document.getElementById('rec-customer-search').value||'':'').trim().toLowerCase();
+  var hint=document.getElementById('rec-customer-hint');
+  var ht=document.getElementById('rec-customer-hint-text');
+  var dlBtn=hint?hint.querySelector('button'):null;
+  if(q.length>=2){
+    var all=(D.recommendations?D.recommendations.reorder||[]:[]).concat(
+      D.recommendations?D.recommendations.crosssell||[]:[]).concat(
+      D.recommendations?D.recommendations.newstyle||[]:[]);
+    var seen={};
+    var matches=[];
+    all.forEach(function(r){
+      if(r.customer.toLowerCase().indexOf(q)>=0&&!seen[r.customer]){
+        seen[r.customer]=true;matches.push(r.customer);
+      }
+    });
+    hint.style.display='flex';
+    if(matches.length===1){
+      ht.textContent='Showing all recommendations for: '+matches[0];
+      if(dlBtn) dlBtn.style.display='';
+    } else if(matches.length>1){
+      ht.textContent=matches.length+' customers match — refine to one customer';
+      if(dlBtn) dlBtn.style.display='none';
+    } else {
+      ht.textContent='No customers match.';
+      if(dlBtn) dlBtn.style.display='none';
+    }
+  } else {
+    if(hint) hint.style.display='none';
+  }
+  renderReorderTab(); renderCrossSell(); renderNewStyle();
+}
+
+function clearRecFilter(){
+  var el=document.getElementById('rec-customer-search');
+  if(el) el.value='';
+  var hint=document.getElementById('rec-customer-hint');
+  if(hint) hint.style.display='none';
+  renderReorderTab(); renderCrossSell(); renderNewStyle();
+}
+
+function downloadCustomerPlan(){
+  var q=(document.getElementById('rec-customer-search')?document.getElementById('rec-customer-search').value||'':'').trim().toLowerCase();
+  var reorder=(D.recommendations?D.recommendations.reorder||[]:[]).filter(function(r){return r.customer.toLowerCase().indexOf(q)>=0;});
+  var xsell=(D.recommendations?D.recommendations.crosssell||[]:[]).filter(function(r){return r.customer.toLowerCase().indexOf(q)>=0;});
+  var newstyle=(D.recommendations?D.recommendations.newstyle||[]:[]).filter(function(r){return r.customer.toLowerCase().indexOf(q)>=0;});
+  var seen={};var customers=[];
+  reorder.concat(xsell).concat(newstyle).forEach(function(r){if(!seen[r.customer]){seen[r.customer]=true;customers.push(r.customer);}});
+  var cname=customers.length===1?customers[0]:'MultipleCustomers';
+  var wb=XLSX.utils.book_new();
+  var cover=[
+    ['Nordic Kolektive Ventures - AI Recommendation Plan'],
+    ['Customer:',cname],
+    ['Generated:',new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})],
+    ['Pipeline:',D.meta?D.meta.pipeline||'May 2026':'May 2026'],
+    [],
+    ['Sections: 1. Reorder Alerts   2. Brand Opportunities   3. New Style Introductions'],
+  ];
+  var cws=XLSX.utils.aoa_to_sheet(cover);
+  cws['!cols']=[{wch:30},{wch:40}];
+  XLSX.utils.book_append_sheet(wb,'Cover',cws);
+  if(reorder.length){
+    var ws=XLSX.utils.json_to_sheet(reorder.map(function(r){return{
+      'Customer':r.customer,'Brand':r.brand,
+      'Last Ordered':r.last_order_month||'---',
+      'Months Overdue':Math.round(+r.months_overdue||0),
+      'Avg Order Qty':Math.round(+r.avg_order_qty||0),
+      'Priority':r.priority,
+      'Action':r.priority==='URGENT'?'Contact immediately - high churn risk':'Contact within 2 months',
+    };}));
+    ws['!cols']=[{wch:28},{wch:18},{wch:14},{wch:15},{wch:15},{wch:10},{wch:40}];
+    XLSX.utils.book_append_sheet(wb,'1. Reorder Alerts',ws);
+  }
+  if(xsell.length){
+    var ws2=XLSX.utils.json_to_sheet(xsell.map(function(r){return{
+      'Customer':r.customer,'Recommended Brand':r.brand,
+      'Confidence Score':+r.confidence||0,
+      'Similar Customers Buying':r.similar_customers||0,
+      'Priority':r.priority,
+    };}));
+    ws2['!cols']=[{wch:28},{wch:24},{wch:17},{wch:24},{wch:10}];
+    XLSX.utils.book_append_sheet(wb,'2. Brand Opportunities',ws2);
+  }
+  if(newstyle.length){
+    var ws3=XLSX.utils.json_to_sheet(newstyle.map(function(r){return{
+      'Customer':r.customer,'Brand':r.brand,'Style':r.style,
+      'Match Score':parseFloat(r.score||0).toFixed(1),
+      'Colour Match %':(+r.colour_match_pct||0)+'%',
+      'Priority':r.priority,
+    };}));
+    ws3['!cols']=[{wch:28},{wch:18},{wch:16},{wch:13},{wch:14},{wch:10}];
+    XLSX.utils.book_append_sheet(wb,'3. New Style Intros',ws3);
+  }
+  var stamp=new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb,('RecPlan_'+cname+'_'+stamp+'.xlsx').replace(/\s+/g,'_'));
+}
+
+function renderFcSkuTable(){
+  var brand=document.getElementById('fc-brand').value;
+  var month=document.getElementById('fc-month').value;
+  var wrap=document.getElementById('fc-sku-table');
+  if(brand==='ALL'||month==='ALL'){
+    wrap.innerHTML='<div class="loading-text">Select a specific brand and month to see style, colour and size detail.</div>';
+    return;
+  }
+  var rows=(D.forecast?D.forecast.sku||[]:[]).filter(function(r){return r.brand===brand&&r.year_month===month;});
+  if(!rows.length){wrap.innerHTML='<div class="loading-text">No SKU data for this selection.</div>';return;}
+  var sorted=rows.slice().sort(function(a,b){return(+b.p50||0)-(+a.p50||0);});
+  var tbody=sorted.map(function(r){
+    return '<tr><td class="mono">'+(r.style||'—')+'</td><td>'+(r.colour||'—')+'</td><td>'+(r.size||'—')+'</td>'+
+      '<td class="mono" style="text-align:right">'+Math.round(+r.p10||0).toLocaleString()+'</td>'+
+      '<td class="mono" style="text-align:right"><strong>'+Math.round(+r.p50||0).toLocaleString()+'</strong></td>'+
+      '<td class="mono" style="text-align:right">'+Math.round(+r.p90||0).toLocaleString()+'</td></tr>';
+  }).join('');
+  wrap.innerHTML='<table><thead><tr><th>Style</th><th>Colour</th><th>Size</th>'+
+    '<th style="text-align:right">P10 Low</th>'+
+    '<th style="text-align:right">P50 Expected</th>'+
+    '<th style="text-align:right">P90 High</th></tr></thead><tbody>'+tbody+'</tbody></table>';
+}
+</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 /* ── Reset & Tokens ───────────────────────────────────── */
@@ -925,753 +1140,6 @@ function renderValTable(){
       </tr>`;}).join('')}</tbody>
   </table>`;
 }
-
-/* ══ FORECAST EXPORTS ═════════════════════════════════════════ */
-function downloadForecastCSV(){
-  const brand=document.getElementById('fc-brand').value;
-  const month=document.getElementById('fc-month').value;
-  const raw=D.forecast?.monthly||[];
-  let d=raw;
-  if(brand!=='ALL') d=d.filter(r=>r.brand===brand);
-  if(month!=='ALL') d=d.filter(r=>r.year_month===month);
-  if(!d.length){alert('No forecast data for current selection.');return;}
-
-  // Aggregate by month (same logic as chart)
-  const mos=[...new Set(d.map(r=>r.year_month))].sort();
-  const rows=mos.map(m=>{
-    const slice=d.filter(r=>r.year_month===m);
-    return{
-      'Month':m.slice(0,7),
-      'Brand':brand==='ALL'?'All brands':brand,
-      'P10 — Low estimate':slice.reduce((s,r)=>s+(+r.p10||0),0),
-      'P50 — Expected demand':slice.reduce((s,r)=>s+(+r.p50||0),0),
-      'P90 — High estimate':slice.reduce((s,r)=>s+(+r.p90||0),0),
-    };
-  });
-
-  // Build CSV string
-  const headers=Object.keys(rows[0]);
-  const csv=[
-    '# Nordic Kolektive Ventures — Demand Forecast Export',
-    '# Generated: '+new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}),
-    '# Pipeline: '+(D.meta?.pipeline||'May 2026'),
-    '# Brand: '+( brand==='ALL'?'All brands':brand ),
-    '',
-    headers.join(','),
-    ...rows.map(r=>headers.map(h=>r[h]).join(','))
-  ].join('\n');
-
-  const blob=new Blob([csv],{type:'text/csv'});
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);
-  const stamp=new Date().toISOString().slice(0,10);
-  a.download=`Forecast_${brand==='ALL'?'AllBrands':brand}_${stamp}.csv`.replace(/\s+/g,'_');
-  a.click();
-}
-
-function downloadForecastChart(){
-  const canvas=document.getElementById('fc-chart');
-  if(!canvas){alert('Chart not loaded yet.');return;}
-  // Add white background before saving (canvas is transparent by default)
-  const offscreen=document.createElement('canvas');
-  offscreen.width=canvas.width;
-  offscreen.height=canvas.height;
-  const ctx=offscreen.getContext('2d');
-  ctx.fillStyle='#ffffff';
-  ctx.fillRect(0,0,offscreen.width,offscreen.height);
-  ctx.drawImage(canvas,0,0);
-  const a=document.createElement('a');
-  const brand=document.getElementById('fc-brand').value;
-  const month=document.getElementById('fc-month').value;
-  const stamp=new Date().toISOString().slice(0,10);
-  a.download=`ForecastChart_${brand==='ALL'?'AllBrands':brand}_${month==='ALL'?'AllMonths':month}_${stamp}.png`.replace(/\s+/g,'_');
-  a.href=offscreen.toDataURL('image/png');
-  a.click();
-}
-
-function downloadSkuCSV(){
-  const brand=document.getElementById('fc-brand').value;
-  const month=document.getElementById('fc-month').value;
-  if(brand==='ALL'||month==='ALL'){
-    alert('Select a specific brand and month first to download the colour/size breakdown.');
-    return;
-  }
-  const rows=(D.forecast?.sku||[]).filter(r=>r.brand===brand&&r.year_month===month);
-  if(!rows.length){alert('No colour/size data for this selection.');return;}
-
-  const headers=['Brand','Month','Colour','Size','P10 — Low','P50 — Expected','P90 — High'];
-  const csv=[
-    '# Nordic Kolektive Ventures — Colour & Size Forecast Export',
-    '# Brand: '+brand+' | Month: '+month.slice(0,7),
-    '# Generated: '+new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}),
-    '',
-    headers.join(','),
-    ...rows.sort((a,b)=>(+b.p50||0)-(+a.p50||0)).map(r=>[
-      r.brand, r.year_month.slice(0,7), r.colour, r.size,
-      Math.round(+r.p10||0), Math.round(+r.p50||0), Math.round(+r.p90||0)
-    ].join(','))
-  ].join('\n');
-
-  const blob=new Blob([csv],{type:'text/csv'});
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);
-  a.download=`ColourSize_${brand}_${month.slice(0,7)}.csv`.replace(/\s+/g,'_');
-  a.click();
-}
-
-/* ══ BUY PLAN ══════════════════════════════════════════════════ */
-function initBuyPlan(){
-  const bs=D.buyplan?.brand_summary||[];
-  const bsel=document.getElementById('bp-brand');
-  const msel=document.getElementById('bp-month');
-  const ssel=document.getElementById('bp-style');
-  const brands=[...new Set(bs.map(r=>r.brand))].sort();
-  const months=[...new Set((D.buyplan?.lines||[]).map(r=>r.month))].sort();
-  const styles=[...new Set((D.buyplan?.lines||[]).map(r=>r.style))].sort();
-  brands.forEach(b=>{const o=document.createElement('option');o.value=b;o.textContent=b;bsel.appendChild(o);});
-  months.forEach(m=>{const o=document.createElement('option');o.value=m;o.textContent=m;msel.appendChild(o);});
-  styles.slice(0,100).forEach(s=>{const o=document.createElement('option');o.value=s;o.textContent=s;ssel.appendChild(o);});
-  renderBuyPlan();
-}
-
-function renderBuyPlan(){
-  const brand=document.getElementById('bp-brand').value;
-  const month=document.getElementById('bp-month').value;
-  const style=document.getElementById('bp-style').value;
-  const flag=document.getElementById('bp-flag').value;
-  let rows=D.buyplan?.lines||[];
-  if(brand!=='ALL') rows=rows.filter(r=>r.brand===brand);
-  if(month!=='ALL') rows=rows.filter(r=>r.month===month);
-  if(style!=='ALL') rows=rows.filter(r=>r.style===style);
-  if(flag==='ok') rows=rows.filter(r=>(+r.buy_qty||0)>0);
-  if(flag==='below_moq') rows=rows.filter(r=>+r.below_moq);
-  if(flag==='new_style') rows=rows.filter(r=>+r.new_style);
-  const total=rows.reduce((s,r)=>s+(+r.buy_qty||0),0);
-  const review=rows.filter(r=>+r.below_moq).length;
-  document.getElementById('bp-total').textContent=total.toLocaleString();
-  document.getElementById('bp-lines').textContent=rows.length.toLocaleString();
-  document.getElementById('bp-review').textContent=review.toLocaleString();
-  const shown=rows.slice(0,500);
-  const wrap=document.getElementById('bp-table');
-  if(!shown.length){wrap.innerHTML='<div class="loading-text">No lines match current filters.</div>';return;}
-  wrap.innerHTML=`<table>
-    <thead><tr><th>Brand</th><th>Style</th><th>Colour</th><th>Size</th><th>Month</th>
-      <th>P50 (Expected)</th><th>P90 (High)</th><th>Buy Qty</th><th>MOQ</th><th>Flags</th></tr></thead>
-    <tbody>${shown.map(r=>{
-      const flags=[];
-      if(+r.new_style) flags.push('<span class="tag tag-blue">New Style</span>');
-      if(+r.below_moq) flags.push('<span class="tag tag-amber">Below MOQ</span>');
-      if(+r.zero_fcst) flags.push('<span class="tag tag-red">Zero Forecast</span>');
-      return`<tr>
-        <td>${r.brand}</td><td class="mono">${r.style}</td>
-        <td>${r.colour}</td><td class="mono">${r.size}</td>
-        <td class="mono">${r.month}</td>
-        <td>${(+r.p50||0).toLocaleString()}</td>
-        <td>${(+r.p90||0).toLocaleString()}</td>
-        <td><strong>${(+r.buy_qty||0).toLocaleString()}</strong></td>
-        <td class="mono">${r.moq}</td>
-        <td>${flags.join(' ')||'<span class="tag tag-green">OK</span>'}</td>
-      </tr>`;}).join('')}</tbody>
-  </table>`;
-  if(rows.length>500){
-    wrap.innerHTML+=`<div class="info-box teal" style="margin-top:.75rem">
-      <div>Showing 500 of ${rows.length.toLocaleString()} rows. Download the Excel file to see all.</div>
-    </div>`;
-  }
-}
-
-function downloadBuyPlan(){
-  const brand=document.getElementById('bp-brand').value;
-  const month=document.getElementById('bp-month').value;
-  const style=document.getElementById('bp-style').value;
-  const flag=document.getElementById('bp-flag').value;
-  let rows=D.buyplan?.lines||[];
-  if(brand!=='ALL') rows=rows.filter(r=>r.brand===brand);
-  if(month!=='ALL') rows=rows.filter(r=>r.month===month);
-  if(style!=='ALL') rows=rows.filter(r=>r.style===style);
-  if(flag==='ok') rows=rows.filter(r=>(+r.buy_qty||0)>0);
-  if(flag==='below_moq') rows=rows.filter(r=>+r.below_moq);
-  if(flag==='new_style') rows=rows.filter(r=>+r.new_style);
-  if(!rows.length){alert('No rows to download with current filters.');return;}
-  const ws=XLSX.utils.json_to_sheet(rows.map(r=>({
-    'Brand':r.brand,'Style':r.style,'Colour':r.colour,'Size':r.size,
-    'Month':r.month,'P50 Forecast':(+r.p50||0),'P90 Forecast':(+r.p90||0),
-    'Recommended Buy Qty':(+r.buy_qty||0),'MOQ':r.moq,
-    'New Style':+r.new_style?'Yes':'','Below MOQ':+r.below_moq?'Yes':'',
-  })));
-  const wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,'Buy Plan',ws);
-  const stamp=new Date().toISOString().slice(0,10);
-  const fname=`BuyPlan_${brand}_${month}_${stamp}.xlsx`.replace(/\s/g,'_');
-  XLSX.writeFile(wb,fname);
-}
-
-
-/* ══ FORECAST EXPORTS ══════════════════════════════════════════ */
-function downloadForecastCSV(){
-  const brand=document.getElementById('fc-brand').value;
-  const month=document.getElementById('fc-month').value;
-  let d=D.forecast?.monthly||[];
-  if(brand!=='ALL') d=d.filter(r=>r.brand===brand);
-  if(month!=='ALL') d=d.filter(r=>r.year_month===month);
-  if(!d.length){alert('No forecast data for current selection.');return;}
-  const mos=[...new Set(d.map(r=>r.year_month))].sort();
-  const rows=mos.map(m=>{
-    const s=d.filter(r=>r.year_month===m);
-    return{'Month':m.slice(0,7),'Brand':brand==='ALL'?'All brands':brand,
-      'P10 Low':Math.round(s.reduce((a,r)=>a+(+r.p10||0),0)),
-      'P50 Expected':Math.round(s.reduce((a,r)=>a+(+r.p50||0),0)),
-      'P90 High':Math.round(s.reduce((a,r)=>a+(+r.p90||0),0))};
-  });
-  const hdr=Object.keys(rows[0]);
-  const csv=['# Nordic Kolektive Ventures — Demand Forecast',
-    '# Brand: '+(brand==='ALL'?'All brands':brand),
-    '# Generated: '+new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}),
-    '',hdr.join(','),...rows.map(r=>hdr.map(h=>r[h]).join(','))].join('\n');
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
-  a.download=('Forecast_'+(brand==='ALL'?'AllBrands':brand)+'_'+new Date().toISOString().slice(0,10)+'.csv').replace(/\s+/g,'_');
-  a.click();
-}
-
-function downloadForecastChart(){
-  const cv=document.getElementById('fc-chart');
-  if(!cv){alert('Chart not loaded yet.');return;}
-  const off=document.createElement('canvas');
-  off.width=cv.width; off.height=cv.height;
-  const ctx=off.getContext('2d');
-  ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,off.width,off.height);
-  ctx.drawImage(cv,0,0);
-  const brand=document.getElementById('fc-brand').value;
-  const a=document.createElement('a');
-  a.download=('ForecastChart_'+(brand==='ALL'?'AllBrands':brand)+'_'+new Date().toISOString().slice(0,10)+'.png').replace(/\s+/g,'_');
-  a.href=off.toDataURL('image/png');
-  a.click();
-}
-
-function downloadSkuCSV(){
-  const brand=document.getElementById('fc-brand').value;
-  const month=document.getElementById('fc-month').value;
-  if(brand==='ALL'||month==='ALL'){
-    alert('Select a specific brand and month first.');return;
-  }
-  const rows=(D.forecast?.sku||[]).filter(r=>r.brand===brand&&r.year_month===month);
-  if(!rows.length){alert('No colour/size data for this selection.');return;}
-  const hdr=['Brand','Month','Colour','Size','P10','P50','P90'];
-  const csv=['# Nordic Kolektive Ventures — Colour & Size Forecast',
-    '# Brand: '+brand+' | Month: '+month.slice(0,7),'',
-    hdr.join(','),...rows.sort((a,b)=>(+b.p50||0)-(+a.p50||0)).map(r=>[
-      r.brand,r.year_month.slice(0,7),r.colour,r.size,
-      Math.round(+r.p10||0),Math.round(+r.p50||0),Math.round(+r.p90||0)].join(','))].join('\n');
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
-  a.download=('ColourSize_'+brand+'_'+month.slice(0,7)+'.csv').replace(/\s+/g,'_');
-  a.click();
-}
-
-/* ══ RECOMMENDATION CUSTOMER FILTER & EXPORT ══════════════════ */
-function _recQ(){return(document.getElementById('rec-customer-search')?.value||'').trim().toLowerCase();}
-
-function filterRecsByCustomer(){
-  const q=_recQ();
-  const hint=document.getElementById('rec-customer-hint');
-  const ht=document.getElementById('rec-customer-hint-text');
-  if(q.length>=2){
-    const all=[...(D.recommendations?.reorder||[]),...(D.recommendations?.crosssell||[]),...(D.recommendations?.newstyle||[])];
-    const matches=[...new Set(all.map(r=>r.customer).filter(c=>c.toLowerCase().includes(q)))];
-    hint.style.display='flex';
-    if(matches.length===1) ht.textContent='Showing all recommendations for: '+matches[0];
-    else if(matches.length>1) ht.textContent=matches.length+' customers match — refine to one to download a plan';
-    else{ht.textContent='No customers match.'; hint.querySelector('button').style.display='none';}
-    if(matches.length===1) hint.querySelector('button').style.display='';
-    else hint.querySelector('button').style.display='none';
-  } else {hint.style.display='none';}
-  renderReorderTab(); renderCrossSell(); renderNewStyle();
-}
-
-function clearRecFilter(){
-  document.getElementById('rec-customer-search').value='';
-  document.getElementById('rec-customer-hint').style.display='none';
-  renderReorderTab(); renderCrossSell(); renderNewStyle();
-}
-
-function downloadCustomerPlan(){
-  const q=_recQ();
-  const reorder=(D.recommendations?.reorder||[]).filter(r=>r.customer.toLowerCase().includes(q));
-  const xsell=(D.recommendations?.crosssell||[]).filter(r=>r.customer.toLowerCase().includes(q));
-  const newstyle=(D.recommendations?.newstyle||[]).filter(r=>r.customer.toLowerCase().includes(q));
-  const customers=[...new Set([...reorder,...xsell,...newstyle].map(r=>r.customer))];
-  const cname=customers.length===1?customers[0]:'MultipleCustomers';
-  const wb=XLSX.utils.book_new();
-
-  // Cover sheet
-  const cover=[
-    ['Nordic Kolektive Ventures — AI Recommendation Plan'],
-    ['Customer:', cname],
-    ['Generated:', new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})],
-    ['Pipeline:', D.meta?.pipeline||'May 2026'],
-    [],
-    ['This plan is generated by the Demand Intelligence system based on actual purchase history.'],
-    ['Sections: 1. Reorder Alerts  2. Brand Opportunities  3. New Style Introductions'],
-  ];
-  const cws=XLSX.utils.aoa_to_sheet(cover);
-  cws['!cols']=[{wch:30},{wch:40}];
-  XLSX.utils.book_append_sheet(wb,'Cover',cws);
-
-  if(reorder.length){
-    const ws=XLSX.utils.json_to_sheet(reorder.map(r=>({
-      'Customer':r.customer,'Brand':r.brand,
-      'Last Ordered':r.last_order_month||'—',
-      'Months Overdue':Math.round(+r.months_overdue||0),
-      'Avg Order Qty':Math.round(+r.avg_order_qty||0),
-      'Priority':r.priority,
-      'Action':r.priority==='URGENT'?'Contact immediately — high churn risk':'Contact within 2 months',
-    })));
-    ws['!cols']=[{wch:28},{wch:18},{wch:14},{wch:15},{wch:15},{wch:10},{wch:40}];
-    XLSX.utils.book_append_sheet(wb,'1. Reorder Alerts',ws);
-  }
-
-  if(xsell.length){
-    const ws=XLSX.utils.json_to_sheet(xsell.map(r=>({
-      'Customer':r.customer,'Recommended Brand':r.brand,
-      'Confidence Score':+r.confidence||0,
-      'Similar Customers Buying':r.similar_customers||0,
-      'Priority':r.priority,
-    })));
-    ws['!cols']=[{wch:28},{wch:24},{wch:17},{wch:24},{wch:10}];
-    XLSX.utils.book_append_sheet(wb,'2. Brand Opportunities',ws);
-  }
-
-  if(newstyle.length){
-    const ws=XLSX.utils.json_to_sheet(newstyle.map(r=>({
-      'Customer':r.customer,'Brand':r.brand,'Style':r.style,
-      'Match Score':parseFloat(r.score||0).toFixed(1),
-      'Colour Match %':(+r.colour_match_pct||0)+'%',
-      'Priority':r.priority,
-    })));
-    ws['!cols']=[{wch:28},{wch:18},{wch:16},{wch:13},{wch:14},{wch:10}];
-    XLSX.utils.book_append_sheet(wb,'3. New Style Intros',ws);
-  }
-
-  const stamp=new Date().toISOString().slice(0,10);
-  XLSX.writeFile(wb,('RecPlan_'+cname+'_'+stamp+'.xlsx').replace(/\s+/g,'_'));
-}
-
-/* ══ RECOMMENDATIONS ══════════════════════════════════════════ */
-function initRecs(){
-  const c=D.recommendations?.counts||{};
-  document.getElementById('rec-urgent').textContent=c.reorder_urgent||0;
-  document.getElementById('rec-due').textContent=(c.reorder_total||0)-(c.reorder_urgent||0);
-  document.getElementById('rec-xsell').textContent=(+c.xsell_high||0).toLocaleString();
-  document.getElementById('rec-newstyle').textContent=(+c.newstyle_high||0).toLocaleString();
-  document.getElementById('urgentBadge').textContent=c.reorder_urgent||0;
-  renderReorderTab();
-  renderCrossSell();
-  renderNewStyle();
-}
-
-function recTab(name,el){
-  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
-  el.classList.add('active');
-  document.getElementById('tab-'+name).classList.add('active');
-}
-
-function getRecCustomerFilter(){
-  return (document.getElementById('rec-customer-search')?.value||'').trim().toLowerCase();
-}
-
-function filterRecsByCustomer(){
-  const q=getRecCustomerFilter();
-  const hint=document.getElementById('rec-customer-hint');
-  const hintText=document.getElementById('rec-customer-hint-text');
-  if(q.length>=2){
-    // find matching customers across all rec types
-    const all=[
-      ...(D.recommendations?.reorder||[]).map(r=>r.customer),
-      ...(D.recommendations?.crosssell||[]).map(r=>r.customer),
-      ...(D.recommendations?.newstyle||[]).map(r=>r.customer),
-    ];
-    const matches=[...new Set(all.filter(c=>c.toLowerCase().includes(q)))];
-    if(matches.length===1){
-      hint.style.display='flex';
-      hintText.textContent='Showing all recommendations for: '+matches[0];
-    } else if(matches.length>1){
-      hint.style.display='flex';
-      hintText.textContent=matches.length+' customers match — refine to one to download a plan';
-    } else {
-      hint.style.display='none';
-    }
-  } else {
-    hint.style.display='none';
-  }
-  renderReorderTab();
-  renderCrossSell();
-  renderNewStyle();
-}
-
-function clearRecFilter(){
-  document.getElementById('rec-customer-search').value='';
-  document.getElementById('rec-customer-hint').style.display='none';
-  renderReorderTab();renderCrossSell();renderNewStyle();
-}
-
-function downloadCustomerPlan(){
-  const q=getRecCustomerFilter();
-  const reorder=(D.recommendations?.reorder||[]).filter(r=>r.customer.toLowerCase().includes(q));
-  const xsell=(D.recommendations?.crosssell||[]).filter(r=>r.customer.toLowerCase().includes(q));
-  const newstyle=(D.recommendations?.newstyle||[]).filter(r=>r.customer.toLowerCase().includes(q));
-  const customers=[...new Set([...reorder,...xsell,...newstyle].map(r=>r.customer))];
-  const customerName=customers.length===1?customers[0]:'Multiple_Customers';
-
-  const wb=XLSX.utils.book_new();
-
-  // Sheet 1 — Summary cover
-  const coverRows=[
-    ['Nordic Kolektive Ventures — AI Recommendation Plan'],
-    ['Customer:',customerName],
-    ['Generated:',new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})],
-    ['Pipeline:',D.meta?.pipeline||'May 2026'],
-    [],
-    ['This plan is generated by the Demand Intelligence system based on actual purchase history.'],
-    ['It contains three sections: Reorder Alerts, Brand Opportunities, and New Style Introductions.'],
-  ];
-  const coverWs=XLSX.utils.aoa_to_sheet(coverRows);
-  coverWs['!cols']=[{wch:35},{wch:40}];
-  XLSX.utils.book_append_sheet(wb,'Cover',coverWs);
-
-  // Sheet 2 — Reorder Alerts
-  if(reorder.length){
-    const wsData=reorder.map(r=>({
-      'Customer':r.customer,
-      'Brand':r.brand,
-      'Last Ordered':r.last_order_month||'—',
-      'Months Overdue':Math.round(+r.months_overdue||0),
-      'Avg Order Qty (units)':Math.round(+r.avg_order_qty||0),
-      'Priority':r.priority,
-      'Recommended Action':r.priority==='URGENT'?'Contact immediately — high churn risk':'Contact within 2 months',
-    }));
-    const ws=XLSX.utils.json_to_sheet(wsData);
-    ws['!cols']=[{wch:30},{wch:20},{wch:14},{wch:15},{wch:20},{wch:12},{wch:42}];
-    XLSX.utils.book_append_sheet(wb,'1. Reorder Alerts',ws);
-  }
-
-  // Sheet 3 — Cross-sell Opportunities
-  if(xsell.length){
-    const wsData=xsell.map(r=>({
-      'Customer':r.customer,
-      'Recommended Brand':r.brand,
-      'Confidence Score':+r.confidence||0,
-      'Similar Customers Already Buying':r.similar_customers||0,
-      'Priority':r.priority,
-      'Why':((r.similar_customers||0)+' customers with similar buying patterns already buy this brand'),
-    }));
-    const ws=XLSX.utils.json_to_sheet(wsData);
-    ws['!cols']=[{wch:30},{wch:26},{wch:17},{wch:34},{wch:12},{wch:55}];
-    XLSX.utils.book_append_sheet(wb,'2. Brand Opportunities',ws);
-  }
-
-  // Sheet 4 — New Style Introductions
-  if(newstyle.length){
-    const wsData=newstyle.map(r=>({
-      'Customer':r.customer,
-      'Brand':r.brand,
-      'Style':r.style,
-      'Match Score (out of 10)':(+r.score||0).toFixed(1),
-      'Colour Match %':(+r.colour_match_pct||0)+'%',
-      'Priority':r.priority,
-    }));
-    const ws=XLSX.utils.json_to_sheet(wsData);
-    ws['!cols']=[{wch:30},{wch:20},{wch:16},{wch:22},{wch:15},{wch:12}];
-    XLSX.utils.book_append_sheet(wb,'3. New Style Intros',ws);
-  }
-
-  const stamp=new Date().toISOString().slice(0,10);
-  XLSX.writeFile(wb,`RecommendationPlan_${customerName.replace(/\s+/g,'_')}_${stamp}.xlsx`);
-}
-
-function renderReorderTab(){
-  const q=getRecCustomerFilter();
-  let ro=D.recommendations?.reorder||[];
-  if(q.length>=2) ro=ro.filter(r=>r.customer.toLowerCase().includes(q));
-  const urgent=ro.filter(r=>r.priority==='URGENT').length;
-  const due=ro.filter(r=>r.priority==='DUE').length;
-  // Doughnut
-  dc('reorder-chart');
-  CH.rc=new Chart(document.getElementById('reorder-chart'),{type:'doughnut',
-    data:{labels:['Call immediately (URGENT)','Due this month (DUE)'],
-      datasets:[{data:[urgent,due],backgroundColor:['#DC2626','#D97706'],borderWidth:2,borderColor:'#fff'}]},
-    options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{position:'bottom',labels:{font:{size:11}}}}}
-  });
-  // Top 4 urgency cards
-  const cards=ro.slice(0,4).map(r=>`
-    <div class="rec-card">
-      <div class="rec-icon ${r.priority==='URGENT'?'red':'amber'}"></div>
-      <div class="rec-body">
-        <div class="rec-title">${r.customer}</div>
-        <div class="rec-desc">
-          Hasn't ordered <strong>${r.brand}</strong> for
-          <strong style="color:${r.priority==='URGENT'?'var(--red)':'var(--amber)'}">${Math.round(+r.months_overdue||0)} months</strong>.
-          Average order: ${Math.round(+r.avg_order_qty||0)} units.
-        </div>
-        <div class="rec-meta">
-          <span class="tag ${r.priority==='URGENT'?'tag-red':'tag-amber'}">${r.priority}</span>
-          <span class="tag tag-gray">Last order: ${r.last_order_month||'—'}</span>
-        </div>
-      </div>
-    </div>`).join('');
-  document.getElementById('urgency-cards').innerHTML=cards||'<div class="loading-text">No alerts match this filter.</div>';
-  // Table
-  document.getElementById('reorder-table').innerHTML=ro.length?`<table>
-    <thead><tr><th>Customer</th><th>Brand</th><th>Last Ordered</th><th>Months Overdue</th><th>Avg Order Size</th><th>Priority</th><th>Action</th></tr></thead>
-    <tbody>${ro.map(r=>`<tr>
-      <td><strong>${r.customer}</strong></td>
-      <td>${r.brand}</td>
-      <td class="mono">${r.last_order_month||'—'}</td>
-      <td><strong style="color:${r.priority==='URGENT'?'var(--red)':'var(--amber)'}">${Math.round(+r.months_overdue||0)} months</strong></td>
-      <td>${Math.round(+r.avg_order_qty||0)} units</td>
-      <td><span class="tag ${r.priority==='URGENT'?'tag-red':'tag-amber'}">${r.priority}</span></td>
-      <td style="font-size:12px;color:var(--muted)">${r.priority==='URGENT'?'Call now':'Contact this month'}</td>
-    </tr>`).join('')}</tbody></table>`
-  :'<div class="loading-text">No reorder alerts match this filter.</div>';
-}
-
-function renderCrossSell(){
-  const q=getRecCustomerFilter();
-  let d=D.recommendations?.crosssell||[];
-  if(q.length>=2) d=d.filter(r=>r.customer.toLowerCase().includes(q));
-  document.getElementById('xsell-table').innerHTML=d.length?`<table>
-    <thead><tr><th>Customer</th><th>Pitch this brand</th><th>Confidence</th><th>Why</th><th>Priority</th></tr></thead>
-    <tbody>${d.map(r=>{
-      const conf=+r.confidence||0;
-      const bar=`<div class="prog-row"><div class="prog-bar"><div class="prog-fill" style="width:${Math.min(conf/30*100,100)}%"></div></div><span class="mono" style="font-size:11px;width:30px;text-align:right">${conf.toFixed(0)}</span></div>`;
-      const why=`${r.similar_customers||0} similar customers already buy this brand`;
-      return`<tr>
-        <td><strong>${r.customer}</strong></td>
-        <td>${r.brand}</td>
-        <td style="min-width:120px">${bar}</td>
-        <td style="font-size:12px;color:var(--muted)">${why}</td>
-        <td><span class="tag tag-teal">${r.priority}</span></td>
-      </tr>`;}).join('')}</tbody></table>`
-  :'<div class="loading-text">No cross-sell data.</div>';
-}
-
-function renderNewStyle(){
-  const q=getRecCustomerFilter();
-  const min=parseFloat(document.getElementById('score-slider')?.value||8);
-  let d=(D.recommendations?.newstyle||[]).filter(r=>(+r.score||0)>=min);
-  if(q.length>=2) d=d.filter(r=>r.customer.toLowerCase().includes(q));
-  document.getElementById('newstyle-table').innerHTML=d.length?`<table>
-    <thead><tr><th>Customer</th><th>Brand</th><th>Style to Introduce</th><th>Match Score</th><th>Colour Match</th><th>Priority</th></tr></thead>
-    <tbody>${d.map(r=>{
-      const score=+r.score||0;
-      const bar=`<div class="prog-row"><div class="prog-bar"><div class="prog-fill" style="width:${score*10}%"></div></div><strong style="width:30px;text-align:right;font-size:12px">${score.toFixed(1)}</strong></div>`;
-      return`<tr>
-        <td><strong>${r.customer}</strong></td>
-        <td>${r.brand}</td>
-        <td class="mono">${r.style}</td>
-        <td style="min-width:130px">${bar}</td>
-        <td>
-          <div class="prog-row">
-            <div class="prog-bar"><div class="prog-fill" style="width:${+r.colour_match_pct||0}%;background:var(--teal)"></div></div>
-            <span style="font-size:12px;width:35px">${(+r.colour_match_pct||0).toFixed(0)}%</span>
-          </div>
-        </td>
-        <td><span class="tag tag-teal">${r.priority}</span></td>
-      </tr>`;}).join('')}</tbody></table>`
-  :'<div class="loading-text">No recommendations at this score level. Try lowering the slider.</div>';
-}
-
-/* ══ ACCURACY ══════════════════════════════════════════════════ */
-function initAccuracy(){
-  renderAccuracy();
-  renderWalkforward();
-  renderFeatures();
-  renderAccTable();
-}
-
-function renderAccuracy(){
-  const showAll=document.getElementById('show-all-brands')?.checked;
-  let val=D.accuracy?.validation||[];
-  const major=val.filter(v=>(+v.actual||0)>=500);
-  const display=showAll?val:major;
-  if(major.length){
-    const best=major.reduce((a,b)=>(+a.pct_error||99)<(+b.pct_error||99)?a:b);
-    const sorted=[...major].sort((a,b)=>(+a.pct_error||0)-(+b.pct_error||0));
-    const med=sorted[Math.floor(sorted.length/2)];
-    const inR=val.filter(r=>+r.ratio>=0.2&&+r.ratio<=3.0).length;
-    document.getElementById('acc-in-range').textContent=`${inR}/${val.length}`;
-    document.getElementById('acc-best').textContent=best.brand;
-    document.getElementById('acc-best-err').textContent=`${(+best.pct_error||0).toFixed(1)}% error`;
-    document.getElementById('acc-median').textContent=`${(+med?.pct_error||0).toFixed(1)}%`;
-  }
-  const wrap=document.getElementById('acc-bars');
-  if(!display.length){wrap.innerHTML='<div class="loading-text">No data</div>';return;}
-  const sorted=[...display].sort((a,b)=>(+a.pct_error||0)-(+b.pct_error||0));
-  wrap.innerHTML=sorted.map(r=>{
-    const e=+r.pct_error||0;
-    const col=e<20?'var(--green)':e<40?'var(--amber)':'var(--red)';
-    const bgcol=e<20?'var(--green2)':e<40?'var(--amber2)':'var(--red2)';
-    const w=Math.min(e/100*100,100);
-    const verdict=e<20?'Excellent':e<40?'Good':e<60?'High — see note':'Investigate';
-    return`<div class="brand-row">
-      <div class="brand-name-col">${r.brand}${(+r.actual||0)<500?'<span class="tag tag-gray" style="margin-left:6px;font-size:9px">small brand</span>':''}</div>
-      <div class="error-bar-wrap">
-        <div class="error-track"><div class="error-fill" style="width:${w}%;background:${col}"></div></div>
-        <span class="error-pct" style="color:${col}">${e.toFixed(1)}%</span>
-        <span style="font-size:11px;color:var(--muted);width:100px">${verdict}</span>
-      </div>
-    </div>`;}).join('');
-}
-
-function renderWalkforward(){
-  const wf=D.accuracy?.walkforward||[];
-  if(!wf.length) return;
-  dc('wf');
-  CH.wf=new Chart(document.getElementById('wf-chart'),{type:'bar',
-    data:{labels:wf.map(r=>r.window_label),datasets:[
-      {label:'Without AI (naive)',data:wf.map(r=>+r.naive_mae||0),backgroundColor:'rgba(100,116,139,.4)',borderRadius:3},
-      {label:'With AI (model)',data:wf.map(r=>+r.stat_mae||0),backgroundColor:'rgba(13,148,136,.7)',borderRadius:3},
-    ]},
-    options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{position:'top'}},
-      scales:{x:{grid:{display:false}},y:{grid:{color:'#F1F5F9'},title:{display:true,text:'MAE (units)'}}}
-    }
-  });
-}
-
-function renderFeatures(){
-  const ft=D.accuracy?.features||[];
-  if(!ft.length) return;
-  const labels={
-    stock_prev_month:'Stock last month',avg_unit_price:'Product price',
-    seasonal_x_price:'Season × price',seasonal_index:'Seasonal pattern',
-    adi_x_seasonal:'Order frequency × season',grn_lag_1:'Stock arrivals (GRN)',
-    roll_mean_3:'3-month average','cv2':'Demand variability',
-    brand_seasonal_index:'Brand season pattern',series_age_months:'Relationship length'
-  };
-  dc('feat');
-  CH.feat=new Chart(document.getElementById('feat-chart'),{type:'bar',
-    data:{labels:ft.map(f=>labels[f.feature]||f.feature),
-      datasets:[{label:'Importance %',data:ft.map(f=>+f.pct||0),
-        backgroundColor:'rgba(37,99,235,.65)',borderRadius:3}]},
-    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false}},
-      scales:{x:{grid:{color:'#F1F5F9'},ticks:{callback:v=>v+'%'}},
-              y:{grid:{display:false},ticks:{font:{size:10}}}}}
-  });
-}
-
-function renderAccTable(){
-  const val=D.accuracy?.validation||[];
-  document.getElementById('acc-full-table').innerHTML=val.length?`<table>
-    <thead><tr><th>Brand</th><th>Forecast/month</th><th>Actual/month</th><th>Ratio</th><th>Error %</th><th>Monthly volume</th><th>Verdict</th></tr></thead>
-    <tbody>${val.map(r=>{
-      const e=+r.pct_error||0;
-      const cls=e<20?'tag-green':e<40?'tag-amber':'tag-red';
-      const verdict=e<20?'Excellent':e<40?'Good':e<60?'High':'Investigate';
-      const small=(+r.actual||0)<500;
-      return`<tr>
-        <td><strong>${r.brand}</strong>${small?'<span class="tag tag-gray" style="margin-left:6px;font-size:9px">small brand</span>':''}</td>
-        <td>${(+r.forecast||0).toLocaleString()}</td>
-        <td>${(+r.actual||0).toLocaleString()}</td>
-        <td class="mono" style="color:${+r.ratio>=0.8&&+r.ratio<=1.2?'var(--green)':'var(--amber)'}">${r.ratio}×</td>
-        <td><span class="tag ${cls}">${e.toFixed(1)}%</span></td>
-        <td><span class="tag ${small?'tag-gray':'tag-blue'}">${(+r.actual||0)>=500?'Major brand':'Small brand'}</span></td>
-        <td style="font-size:12px;color:var(--muted)">${verdict}</td>
-      </tr>`;}).join('')}</tbody></table>`
-  :'<div class="loading-text">No data</div>';
-}
-
-/* ══ INIT ══════════════════════════════════════════════════════ */
-function init(){
-  if(D.meta?.last_updated){
-    document.getElementById('lastUpdated').textContent=D.meta.last_updated;
-    document.getElementById('pipeline-label').textContent=D.meta.pipeline||'May 2026 pipeline';
-  }
-  initForecast();
-  initBuyPlan();
-  initRecs();
-  initAccuracy();
-}
-
-/* ══ FALLBACK DATA ═════════════════════════════════════════════ */
-function fallback(n){
-  if(n==='meta') return {last_updated:'02 May 2026',pipeline:'May 2026 pipeline'};
-  if(n==='forecast') return {
-    brands:['Lambretta','Original Penguin','CAT','BENCH','KICKERS','OSPREY LONDON','NORDA'],
-    monthly:['2026-05','2026-06','2026-07','2026-08','2026-09','2026-10','2026-11','2026-12','2027-01','2027-02','2027-03','2027-04'].flatMap(m=>[
-      {brand:'Lambretta',year_month:m,p10:300+Math.round(Math.random()*200),p50:700+Math.round(Math.random()*500),p90:1400+Math.round(Math.random()*300)},
-      {brand:'Original Penguin',year_month:m,p10:800+Math.round(Math.random()*400),p50:1600+Math.round(Math.random()*800),p90:2800+Math.round(Math.random()*500)},
-      {brand:'CAT',year_month:m,p10:200+Math.round(Math.random()*200),p50:500+Math.round(Math.random()*300),p90:900+Math.round(Math.random()*200)},
-    ]),
-    sku:['P13 NAVY','P22 TAN','P27 WHITE'].flatMap(col=>
-      ['07','08','09','10','11','12'].map(sz=>
-        ({brand:'Lambretta',year_month:'2026-06',colour:col,size:sz,
-          p10:10+Math.round(Math.random()*10),p50:30+Math.round(Math.random()*30),p90:70+Math.round(Math.random()*30)})
-      )
-    )
-  };
-  if(n==='buyplan') return {
-    kpis:{total_buy:815405,total_p50:454516,total_safety:326717,actionable_lines:205562,below_moq_lines:66441,total_lines:386776},
-    brand_summary:[
-      {brand:'Original Penguin',buy_per_month:22892,p50_per_month:13960,ratio:1.64},
-      {brand:'Lambretta',buy_per_month:12247,p50_per_month:7593,ratio:1.61},
-      {brand:'CAT',buy_per_month:9116,p50_per_month:4390,ratio:2.08},
-    ],
-    lines:[
-      {brand:'Lambretta',style:'LAM0025',colour:'P13 NAVY',size:'09',month:'2026-11',p50:34,p90:41,buy_qty:42,moq:6,new_style:0,below_moq:0,zero_fcst:0},
-      {brand:'Lambretta',style:'LAM0025',colour:'P13 NAVY',size:'10',month:'2026-11',p50:28,p90:35,buy_qty:36,moq:6,new_style:0,below_moq:0,zero_fcst:0},
-      {brand:'CAT',style:'COLORADO',colour:'Black',size:'08',month:'2026-11',p50:8,p90:10,buy_qty:12,moq:12,new_style:0,below_moq:0,zero_fcst:0},
-      {brand:'CAT',style:'COLORADO',colour:'Brown',size:'09',month:'2026-11',p50:3,p90:4,buy_qty:0,moq:12,new_style:0,below_moq:1,zero_fcst:0},
-    ]
-  };
-  if(n==='recommendations') return {
-    counts:{reorder_urgent:37,reorder_total:48,xsell_high:287,newstyle_high:19125},
-    reorder:[
-      {customer:'LUXURY SOLE LTD',brand:'Scholl',last_order_month:'2024-10',months_overdue:16,avg_order_qty:20,priority:'URGENT'},
-      {customer:'Next Retail Ltd',brand:'NINE WEST',last_order_month:'2025-03',months_overdue:12,avg_order_qty:4,priority:'URGENT'},
-      {customer:'LUXURY SOLE LTD',brand:'Lambretta',last_order_month:'2025-03',months_overdue:12,avg_order_qty:27,priority:'URGENT'},
-      {customer:'Next Retail Ltd',brand:'NEW BALANCE',last_order_month:'2025-07',months_overdue:8,avg_order_qty:49,priority:'URGENT'},
-      {customer:'Union 22 Ltd',brand:'NORDA',last_order_month:'2025-08',months_overdue:7,avg_order_qty:4,priority:'DUE'},
-    ],
-    crosssell:[
-      {customer:'Avenue 85 Ltd',brand:'Original Penguin',confidence:27.8,similar_customers:5,priority:'HIGH'},
-      {customer:'ALISONS LIMITED',brand:'ROCKPORT HERITAGE',confidence:21.1,similar_customers:8,priority:'HIGH'},
-      {customer:'NORTON BARRIE',brand:'Rockport Apparel',confidence:18.3,similar_customers:5,priority:'HIGH'},
-    ],
-    newstyle:[
-      {customer:'BELGAL TRADE',brand:'Lambretta',style:'LAM0025',score:10.1,colour_match_pct:83,priority:'HIGH'},
-      {customer:'TOWER BOOTS',brand:'CAT',style:'COLORADO',score:10.0,colour_match_pct:100,priority:'HIGH'},
-      {customer:'GARDINER BROS',brand:'CAT',style:'COLORADO',score:10.0,colour_match_pct:100,priority:'HIGH'},
-    ]
-  };
-  if(n==='accuracy') return {
-    validation:[
-      {brand:'Lambretta',forecast:7121,actual:8022,ratio:0.89,pct_error:11.2,status:'OK'},
-      {brand:'Original Penguin',forecast:18908,actual:14923,ratio:1.27,pct_error:26.7,status:'OK'},
-      {brand:'NORDA',forecast:549,actual:589,ratio:0.93,pct_error:6.8,status:'OK'},
-      {brand:'BENCH',forecast:4874,actual:4874,ratio:1.00,pct_error:0,status:'OK'},
-      {brand:'KICKERS',forecast:1453,actual:1453,ratio:1.00,pct_error:0,status:'OK'},
-      {brand:'CAT',forecast:4991,actual:4991,ratio:1.00,pct_error:0,status:'OK'},
-    ],
-    walkforward:[
-      {window_label:'Sep–Mar 2025',naive_mae:41.2,stat_mae:28.1},
-      {window_label:'Mar–Sep 2025',naive_mae:32.9,stat_mae:19.4},
-      {window_label:'Sep–Apr 2026',naive_mae:24.2,stat_mae:14.7},
-    ],
-    features:[
-      {feature:'stock_prev_month',pct:18.2},{feature:'avg_unit_price',pct:12.6},
-      {feature:'seasonal_x_price',pct:11.5},{feature:'seasonal_index',pct:8.1},
-      {feature:'adi_x_seasonal',pct:7.5},{feature:'grn_lag_1',pct:5.0},
-      {feature:'roll_mean_3',pct:4.5},{feature:'cv2',pct:4.2},
-    ]
-  };
-  return {};
-}
-
-boot();
 </script>
 </body>
 </html>
