@@ -81,15 +81,13 @@ bp_lines = bq(f"""
            SUBSTR(year_month,1,7) AS month,
            ROUND(forecast_p50,0) AS p50,
            ROUND(forecast_p90,0) AS p90,
-           ROUND(COALESCE(buy_qty,0),0)      AS buy_qty,
+           ROUND(buy_qty,0)      AS buy_qty,
            moq,
            CAST(new_style_flag AS INT64)      AS new_style,
            CAST(below_moq_flag AS INT64)      AS below_moq,
            CAST(zero_forecast_flag AS INT64)  AS zero_fcst
     FROM {T('buy_plan')}
-    WHERE COALESCE(forecast_p50,0) > 0
-       OR COALESCE(forecast_p90,0) > 0
-       OR COALESCE(buy_qty,0) > 0
+    WHERE buy_qty > 0
     ORDER BY brand, style, colour, size, month
     LIMIT 80000
 """)
@@ -164,22 +162,7 @@ validation = bq(f"""
 try:
     wf = bq(f"SELECT window_label, naive_mae, stat_mae FROM {T('mae_walkforward')} ORDER BY window_label")
     wf_data = wf.to_dict(orient="records")
-except Exception as e:
-    print(f"    Walk-forward table unavailable: {e}")
-    wf_data = []
-
-# Fallback so the Accuracy page still shows a validation chart
-if not wf_data:
-    wf_fallback = bq(f'''
-        SELECT
-          'Brand validation' AS window_label,
-          ROUND(AVG(actual_monthly_avg), 1) AS naive_mae,
-          ROUND(AVG(ABS(ens_monthly - actual_monthly_avg)), 1) AS stat_mae
-        FROM {T('ensemble_brand_validation')}
-        WHERE actual_monthly_avg > 0
-    ''')
-    wf_data = wf_fallback.to_dict(orient="records")
-    print("    Using fallback validation chart data")
+except: wf_data = []
 try:
     feats = bq(f"""
         SELECT feature, ROUND(importance/SUM(importance) OVER()*100,1) AS pct

@@ -516,7 +516,7 @@ tbody td.strong{color:var(--text);font-weight:600}
     <div class="fld">
       <div class="fld-label">Show only</div>
       <select id="bp-flag" onchange="renderBuyPlan()">
-        <option value="ALL">All forecast lines</option>
+        <option value="ALL">Actionable lines (buy qty &gt; 0)</option>
         <option value="below_moq">Below MOQ (need review)</option>
         <option value="new_style">New styles</option>
       </select>
@@ -928,9 +928,7 @@ function getBuyPlanRows(){
     rows=rows.filter(r=>months.includes(r.month));
   }
   if(style!=='ALL')rows=rows.filter(r=>r.style===style);
-  if(flag==='ALL'){
-    // Show all forecast lines, including brands with forecast but zero buy quantity
-  }
+  if(flag==='ALL')rows=rows.filter(r=>(+r.buy_qty||0)>0);
   else if(flag==='below_moq')rows=rows.filter(r=>+r.below_moq);
   else if(flag==='new_style')rows=rows.filter(r=>+r.new_style);
   return rows;
@@ -1233,11 +1231,7 @@ function toggleAllBrands(){_showAllBrands=!_showAllBrands;renderAccuracyBars();}
 
 function renderWalkforward(){
   const wf=D.accuracy?.walkforward||[];
-  if(!wf.length){
-    const box=document.getElementById('wf-chart')?.parentElement;
-    if(box) box.innerHTML='<div class="loading">Walk-forward validation data not available. Re-run export_data.py or check mae_walkforward table.</div>';
-    return;
-  }
+  if(!wf.length)return;
   dc('wf');
   CH.wf=new Chart(document.getElementById('wf-chart'),{type:'bar',
     data:{labels:wf.map(r=>r.window_label),datasets:[
