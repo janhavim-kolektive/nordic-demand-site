@@ -11,8 +11,8 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#FBF8F3;
-  --bg-warm:#FAF6F0;
+  --bg:#F7F7F5;
+  --bg-warm:#EFEFED;
   --card:#FFFFFF;
   --primary:#E8A15A;
   --primary-dark:#D89249;
@@ -516,7 +516,7 @@ tbody td.strong{color:var(--text);font-weight:600}
     <div class="fld">
       <div class="fld-label">Show only</div>
       <select id="bp-flag" onchange="renderBuyPlan()">
-        <option value="ALL">All forecast lines</option>
+        <option value="ALL">Actionable lines (buy qty &gt; 0)</option>
         <option value="below_moq">Below MOQ (need review)</option>
         <option value="new_style">New styles</option>
       </select>
@@ -679,7 +679,7 @@ tbody td.strong{color:var(--text);font-weight:600}
     <div class="card-head">
       <div>
         <div class="card-title">Full Brand Accuracy Table</div>
-        <div class="card-desc">All brands with monthly forecast, actuals, error and estimated revenue contribution</div>
+        <div class="card-desc">Validation period: <strong>April 2026 holdout</strong> — model trained Jan 2023–Mar 2026, tested on April 2026 actual invoices &nbsp;·&nbsp; Brands under 100 units/month excluded</div>
       </div>
     </div>
     <div class="table-wrap" id="acc-full-wrap"><div><div class="loading">Loading…</div></div></div>
@@ -704,6 +704,9 @@ tbody td.strong{color:var(--text);font-weight:600}
 <script>
 /* ══ DATA LOADING ═════════════════════════════════════════ */
 const D={};
+const APPAREL_BRANDS=['BENCH','Original Penguin','THE RAGGED PRIEST','DFND','Salvation Brands','Broad Textile',
+  'original penguin','bench','the ragged priest'];
+function isFootwear(brand){return !APPAREL_BRANDS.some(a=>a.toLowerCase()===(brand||'').toLowerCase());}
 const PAGES={home:'Home',forecast:'Forecast',buyplan:'Buy Plan & Orders',
              recs:'Recommendations',accuracy:'Accuracy'};
 
@@ -714,6 +717,16 @@ async function boot(){
       D[f]=r.ok?await r.json():fb(f);
     }catch(e){D[f]=fb(f);}
   }
+  // Strip apparel brands from all datasets
+  if(D.forecast?.monthly) D.forecast.monthly=D.forecast.monthly.filter(r=>isFootwear(r.brand));
+  if(D.forecast?.sku) D.forecast.sku=D.forecast.sku.filter(r=>isFootwear(r.brand));
+  if(D.buyplan?.lines) D.buyplan.lines=D.buyplan.lines.filter(r=>isFootwear(r.brand));
+  if(D.buyplan?.brand_summary) D.buyplan.brand_summary=D.buyplan.brand_summary.filter(r=>isFootwear(r.brand));
+  if(D.recommendations?.crosssell) D.recommendations.crosssell=D.recommendations.crosssell.filter(r=>isFootwear(r.brand));
+  if(D.recommendations?.newstyle) D.recommendations.newstyle=D.recommendations.newstyle.filter(r=>isFootwear(r.brand));
+  if(D.recommendations?.reorder) D.recommendations.reorder=D.recommendations.reorder.filter(r=>isFootwear(r.brand));
+  if(D.accuracy?.validation) D.accuracy.validation=D.accuracy.validation.filter(r=>isFootwear(r.brand));
+
   init();
 }
 
@@ -928,9 +941,7 @@ function getBuyPlanRows(){
     rows=rows.filter(r=>months.includes(r.month));
   }
   if(style!=='ALL')rows=rows.filter(r=>r.style===style);
-  if(flag==='ALL'){
-    // Show all forecast lines, including brands with forecast but zero buy quantity
-  }
+  if(flag==='ALL')rows=rows.filter(r=>(+r.buy_qty||0)>0);
   else if(flag==='below_moq')rows=rows.filter(r=>+r.below_moq);
   else if(flag==='new_style')rows=rows.filter(r=>+r.new_style);
   return rows;
@@ -1153,21 +1164,44 @@ function saveCustomize(){
   const months=document.getElementById('cs-months').value;
   const qty=document.getElementById('cs-qty').value;
   const notes=document.getElementById('cs-notes').value;
-  // Generate a one-row customer pitch sheet
   const stamp=new Date().toISOString().slice(0,10);
+  const safeName=(r.customer||'Customer').replace(/[^A-Za-z0-9]/g,'_').slice(0,30);
+  const fname='Pitch_'+safeName+'_'+stamp;
+  const rowData={
+    'Customer':r.customer,
+    'Recommendation Type':r._type==='style'?'New Style':'Brand Cross-sell',
+    'Brand':r.brand,
+    'Style':r.style||'N/A',
+    'Initial Period (months)':months,
+    'Monthly Quantity':qty,
+    'Total Initial Buy':parseInt(months||3)*parseInt(qty||0),
+    'Confidence Score':r._score10.toFixed(1),
+    'Notes':notes
+  };
+  // Try Excel first
+  let done=false;
   try{
-    const ws=XLSX.utils.json_to_sheet([{
-      'Customer':r.customer,'Recommendation Type':r._type==='style'?'New Style':'Brand Cross-sell',
-      'Brand':r.brand,'Style':r.style||'',
-      'Initial Period (months)':months,'Monthly Quantity':qty,
-      'Total Initial Buy':parseInt(months||3)*parseInt(qty||0),
-      'Score':r._score10.toFixed(1),'Notes':notes
-    }]);
-    ws['!cols']=[{wch:30},{wch:18},{wch:18},{wch:14},{wch:14},{wch:14},{wch:14},{wch:8},{wch:30}];
-    const wb=XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb,'Pitch',ws);
-    XLSX.writeFile(wb,`Pitch_${r.customer.replace(/[^A-Za-z0-9]/g,'_').slice(0,30)}_${stamp}.xlsx`);
-  }catch(e){alert('Saved customization. Excel export not available.');}
+    if(typeof XLSX!=='undefined'&&XLSX.utils&&XLSX.writeFile){
+      const ws=XLSX.utils.json_to_sheet([rowData]);
+      ws['!cols']=[{wch:28},{wch:18},{wch:16},{wch:14},{wch:16},{wch:14},{wch:16},{wch:14},{wch:32}];
+      const wb=XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb,'Pitch',ws);
+      XLSX.writeFile(wb,fname+'.xlsx');
+      done=true;
+    }
+  }catch(e){done=false;}
+  // Always-working CSV fallback
+  if(!done){
+    const keys=Object.keys(rowData);
+    const csv=[keys.join(','),
+      keys.map(k=>'"'+String(rowData[k]).replace(/"/g,"'")+'"').join(',')
+    ].join('
+');
+    const a=document.createElement('a');
+    a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+    a.download=fname+'.csv';
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+  }
   closeModal();
 }
 
@@ -1202,18 +1236,21 @@ function renderAccuracyKpis(){
   }
 }
 
+const CLEARANCE_BRANDS=['CAT','BENCH','KICKERS','THE RAGGED PRIEST','OSPREY LONDON'];
 function renderAccuracyBars(){
   const wrap=document.getElementById('acc-bars');
-  let val=D.accuracy?.validation||[];
-  // Sort by revenue (estimated): actual_monthly * unit_price (use unit_price if available, fallback to qty)
-  val=val.map(r=>{
-    const up=+r.avg_unit_price||30; // fallback unit price
-    const rev=(+r.actual||0)*up;
-    return{...r,_rev:rev};
-  }).filter(r=>(+r.actual||0)>=100).sort((a,b)=>b._rev-a._rev);
+  let all=D.accuracy?.validation||[];
+  all=all.map(r=>{
+    const up=+r.avg_unit_price||30;
+    return{...r,_rev:(+r.actual||0)*up};
+  }).filter(r=>(+r.actual||0)>=100);
+
+  // Exclude clearance-affected brands from main chart
+  let val=all.filter(r=>!CLEARANCE_BRANDS.includes(r.brand)).sort((a,b)=>b._rev-a._rev);
   const display=_showAllBrands?val:val.slice(0,7);
   if(!display.length){wrap.innerHTML='<div class="loading">No data</div>';return;}
-  wrap.innerHTML=display.map(r=>{
+
+  let html=display.map(r=>{
     const e=+r.pct_error||0;
     const col=e<20?'var(--success)':e<40?'var(--warning)':'var(--error)';
     const w=Math.min(e/100*100,100);
@@ -1226,6 +1263,29 @@ function renderAccuracyBars(){
       <div class="bar-meta">${verdict} · £${rev}k/yr est.</div>
     </div>`;
   }).join('');
+
+  // Mention clearance brands separately below
+  const clData=all.filter(r=>CLEARANCE_BRANDS.includes(r.brand));
+  if(clData.length){
+    html+=`<div style="margin-top:1rem;padding-top:.9rem;border-top:1px solid var(--border)">
+      <div style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:.6rem">
+        Clearance-affected brands — excluded from chart above (bulk spike orders distort error %)
+      </div>
+      ${clData.map(r=>{
+        const e=+r.pct_error||0;
+        return`<div class="bar-row" style="opacity:.6">
+          <div class="bar-name" style="font-size:12px">${r.brand}</div>
+          <div class="bar-track" style="max-width:340px;background:#F5F5F5">
+            <div class="bar-fill" style="width:${Math.min(e/100*100,100)}%;background:var(--error)"></div>
+          </div>
+          <div class="bar-pct" style="color:var(--error);font-size:12px">${e.toFixed(1)}%</div>
+          <div class="bar-meta" style="font-size:11px;color:var(--faint)">Clearance spike — see note below</div>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }
+
+  wrap.innerHTML=html;
   document.getElementById('acc-toggle').textContent=_showAllBrands?'Show top 7':'Show all brands';
 }
 
@@ -1233,11 +1293,7 @@ function toggleAllBrands(){_showAllBrands=!_showAllBrands;renderAccuracyBars();}
 
 function renderWalkforward(){
   const wf=D.accuracy?.walkforward||[];
-  if(!wf.length){
-    const box=document.getElementById('wf-chart')?.parentElement;
-    if(box) box.innerHTML='<div class="loading">Walk-forward validation data not available. Re-run export_data.py or check mae_walkforward table.</div>';
-    return;
-  }
+  if(!wf.length)return;
   dc('wf');
   CH.wf=new Chart(document.getElementById('wf-chart'),{type:'bar',
     data:{labels:wf.map(r=>r.window_label),datasets:[
@@ -1283,7 +1339,7 @@ function renderAccTable(){
   const data=val.map(r=>{
     const up=+r.avg_unit_price||30;
     return{...r,_rev:Math.round((+r.actual||0)*up*12),_up:up};
-  }).sort((a,b)=>b._rev-a._rev);
+  }).filter(r=>(+r.forecast||0)>=100).sort((a,b)=>b._rev-a._rev);
   wrap.innerHTML=`<div><table>
     <thead><tr><th>Brand</th><th>Forecast / Mo</th><th>Actual / Mo</th><th>Avg Unit Price</th><th>Annual Revenue</th><th>Error %</th><th>Status</th></tr></thead>
     <tbody>${data.map(r=>{
