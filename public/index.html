@@ -11,8 +11,8 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#F6F6F6;
-  --bg-warm:#F0F0F0;
+  --bg:#F9F8F6;
+  --bg-warm:#F2F1EF;
   --card:#FFFFFF;
   --primary:#E8A15A;
   --primary-dark:#D89249;
@@ -44,10 +44,10 @@ html,body{min-height:100vh;background:var(--bg);color:var(--text);
 
 /* ── Layout ─────────────────────────────────────────── */
 .shell{display:flex;min-height:100vh}
-.sidebar{width:240px;background:#FFFFFF;position:fixed;top:0;left:0;
+.sidebar{width:220px;background:#FFFFFF;position:fixed;top:0;left:0;
   height:100vh;border-right:1px solid var(--border-soft);
   display:flex;flex-direction:column;padding:24px 0;z-index:100}
-.body{flex:1;min-width:0;margin-left:240px;overflow-x:hidden}
+.body{flex:1;min-width:0;margin-left:220px;overflow-x:hidden}
 
 /* ── Brand block ────────────────────────────────────── */
 .brand{padding:0 24px 28px;border-bottom:1px solid var(--border-soft);margin-bottom:16px}
@@ -85,7 +85,7 @@ html,body{min-height:100vh;background:var(--bg);color:var(--text);
   display:flex;align-items:center;gap:8px}
 
 /* ── Page ───────────────────────────────────────────── */
-.page-wrap{padding:20px 28px;max-width:1380px;margin:0 auto;width:100%}
+.page-wrap{padding:14px 18px;width:100%}
 .page{display:none;width:100%}
 .page.active{display:block;animation:fade .2s ease}
 @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
@@ -642,19 +642,14 @@ tbody td.strong{color:var(--text);font-weight:600}
     <div class="card-head">
       <div>
         <div class="card-title">Error % by Brand</div>
-        <div class="card-desc">Top 7 brands by revenue · Click below to see all brands</div>
+        <div class="card-desc">All brands · Clearance-affected brands tagged separately</div>
       </div>
     </div>
     <div id="acc-bars"><div class="loading">Loading…</div></div>
-    <div class="show-more">
-      <button class="btn btn-ghost btn-sm" onclick="toggleAllBrands()" id="acc-toggle">Show all brands</button>
-    </div>
+  
   </div>
 
-  <div class="banner warning">
-    <div class="banner-icon">!</div>
-    <div class="banner-body"><strong>Why CAT and BENCH show high error:</strong> Both brands have a small number of customers who place large one-off clearance orders — for example, 34,000 units from a single customer in January 2026, more than 5× normal monthly demand. The model accurately predicts regular commercial demand but cannot predict these one-off bulk events. These customers have been tagged separately so future model runs will exclude them from training.</div>
-  </div>
+
 
   <div class="grid-2">
     <div class="card">
@@ -707,8 +702,11 @@ tbody td.strong{color:var(--text);font-weight:600}
 <script>
 /* ══ DATA LOADING ═════════════════════════════════════════ */
 const D={};
-const APPAREL=['BENCH','Original Penguin','THE RAGGED PRIEST','DFND','Salvation Brands','Broad Textile'];
-function isFootwear(b){return!APPAREL.some(a=>a.toLowerCase()===(b||'').toLowerCase());}
+const NEW_BRANDS=['NORDA','Wolverine','Scholl','DFND'];
+function isNewBrand(b){return NEW_BRANDS.some(n=>n.toLowerCase()===(b||'').toLowerCase());}
+function newTag(b){return isNewBrand(b)?'<span class="tag tag-primary" style="font-size:9px;padding:1px 6px;margin-left:4px">NEW</span>':'';}
+const APPAREL=['BENCH','Original Penguin','THE RAGGED PRIEST','DFND','Salvation Brands','Broad Textile','Rockport Apparel','Rockport Comfort'];
+function isFootwear(b){const bl=(b||'').toLowerCase();return!APPAREL.some(a=>a.toLowerCase()===bl);}
 const PAGES={home:'Overview',forecast:'Forecast',buyplan:'Buy Plan & Orders',
              recs:'Recommendations',accuracy:'Accuracy'};
 
@@ -899,7 +897,7 @@ function renderForecastValidation(){
       const cls=r.pct_error<20?'tag-success':r.pct_error<40?'tag-warning':'tag-error';
       const status=r.pct_error<20?'Excellent':r.pct_error<40?'Acceptable':'Investigate';
       return`<tr>
-        <td class="strong">${r.brand}</td>
+        <td class="strong">${r.brand}${newTag(r.brand)}</td>
         <td class="mono">${r.forecast_6mo.toLocaleString()} units</td>
         <td class="mono">${r.actual_6mo.toLocaleString()} units</td>
         <td class="mono" style="color:${variance>0?'var(--warning)':'var(--success)'}">${variance>0?'+':''}${variance.toLocaleString()}</td>
@@ -963,7 +961,7 @@ function renderBuyPlan(){
       if(+r.below_moq)flags.push('<span class="tag tag-warning">Below MOQ</span>');
       if(+r.zero_fcst)flags.push('<span class="tag tag-error">Zero Forecast</span>');
       return`<tr>
-        <td class="strong">${r.brand}</td><td class="mono">${r.style}</td>
+        <td class="strong">${r.brand}${newTag(r.brand)}</td><td class="mono">${r.style}</td>
         <td>${r.colour||'—'}</td><td class="mono">${r.size||'—'}</td>
         <td class="mono">${r.month}</td>
         <td class="mono">${(+r.p50||0).toLocaleString()}</td>
@@ -1099,7 +1097,7 @@ function recCard(r,idx){
     <div class="rec-head">
       <div class="rec-meta">
         <div class="rec-customer">${r.customer}</div>
-        <div class="rec-title">${isStyle?`Introduce style <span class="mono">${r.style}</span> from ${r.brand}`:`Pitch ${r.brand}`}</div>
+        <div class="rec-title">${isStyle?`Introduce style <span class="mono">${r.style}</span> from ${r.brand}${newTag(r.brand)}`:`Pitch ${r.brand}${newTag(r.brand)}`}</div>
         <div class="rec-tags">
           <span class="tag tag-primary">${typeLabel}</span>
           <span class="tag" style="background:rgba(0,0,0,.04);color:${scoreColor}">Score ${score}/10</span>
@@ -1185,7 +1183,7 @@ function saveCustomize(){
 }
 
 /* ══ ACCURACY PAGE ════════════════════════════════════ */
-let _showAllBrands=false;
+
 function initAccuracy(){
   renderAccuracyKpis();
   renderAccuracyBars();
@@ -1215,33 +1213,39 @@ function renderAccuracyKpis(){
   }
 }
 
-const CLEARANCE_B=['CAT','BENCH','KICKERS','THE RAGGED PRIEST','OSPREY LONDON'];
+// Clearance customer info per brand
+const CLEARANCE_INFO={
+  'CAT':'Ponders End International (5.3×) · TJX UK/TK Maxx (16.6×)',
+  'BENCH':'M and M Direct Ltd (5.4×)',
+  'THE RAGGED PRIEST':'Chapter 01 Limited (14.7×)',
+  'OSPREY LONDON':'Costco Wholesale UK (14.8×)'
+};
 function renderAccuracyBars(){
   const wrap=document.getElementById('acc-bars');
-  let all=(D.accuracy?.validation||[]).map(r=>({...r,_rev:(+r.actual||0)*(+r.avg_unit_price||30)})).filter(r=>(+r.actual||0)>=100);
-  const main=all.filter(r=>!CLEARANCE_B.includes(r.brand)).sort((a,b)=>b._rev-a._rev);
-  const display=_showAllBrands?main:main.slice(0,7);
-  if(!display.length){wrap.innerHTML='<div class="loading">No data</div>';return;}
-  let html=display.map(r=>{
+  const all=(D.accuracy?.validation||[])
+    .map(r=>({...r,_rev:(+r.actual||0)*(+r.avg_unit_price||30)}))
+    .filter(r=>(+r.actual||0)>=100)
+    .sort((a,b)=>b._rev-a._rev);
+  if(!all.length){wrap.innerHTML='<div class="loading">No data</div>';return;}
+  wrap.innerHTML=all.map(r=>{
     const e=+r.pct_error||0;
+    const hasClearance=CLEARANCE_INFO[r.brand];
     const col=e<20?'var(--success)':e<40?'var(--warning)':'var(--error)';
     const rev=Math.round(r._rev*12/1000);
-    return`<div class="bar-row"><div class="bar-name">${r.brand}</div>
-      <div class="bar-track" style="max-width:340px"><div class="bar-fill" style="width:${Math.min(e/100*100,100)}%;background:${col}"></div></div>
-      <div class="bar-pct" style="color:${col}">${e.toFixed(1)}%</div>
-      <div class="bar-meta">${e<15?'Excellent':e<30?'Good':e<50?'Acceptable':'Investigate'} · £${rev}k/yr</div>
+    const verdict=e<15?'Excellent':e<30?'Good':e<50?'Acceptable':'High (clearance)';
+    return`<div class="bar-row" style="flex-direction:column;align-items:flex-start;gap:2px">
+      <div style="display:flex;align-items:center;gap:.75rem;width:100%">
+        <div class="bar-name">${r.brand}${newTag(r.brand)}${hasClearance?'<span class="tag tag-warning" style="font-size:9px;padding:1px 5px;margin-left:4px">Clearance</span>':''}</div>
+        <div class="bar-track" style="flex:1;max-width:340px"><div class="bar-fill" style="width:${Math.min(e/100*100,100)}%;background:${col}"></div></div>
+        <div class="bar-pct" style="color:${col}">${e.toFixed(1)}%</div>
+        <div class="bar-meta">${verdict} · £${rev}k/yr</div>
+      </div>
+      ${hasClearance?`<div style="font-size:10.5px;color:var(--muted);padding-left:180px;line-height:1.4">Clearance customers: ${CLEARANCE_INFO[r.brand]}</div>`:''}
     </div>`;
   }).join('');
-  const cl=all.filter(r=>CLEARANCE_B.includes(r.brand));
-  if(cl.length) html+=`<div style="margin-top:.9rem;padding-top:.75rem;border-top:1px solid var(--border);font-size:11px;color:var(--muted)">
-    <strong style="display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.06em">Clearance-affected — excluded from main chart (see note below)</strong>
-    ${cl.map(r=>`<span style="margin-right:14px">${r.brand} <span style="color:var(--error)">${(+r.pct_error||0).toFixed(1)}%</span></span>`).join('')}
-  </div>`;
-  wrap.innerHTML=html;
-  document.getElementById('acc-toggle').textContent=_showAllBrands?'Show top 7':'Show all brands';
 }
 
-function toggleAllBrands(){_showAllBrands=!_showAllBrands;renderAccuracyBars();}
+
 
 function renderWalkforward(){
   const wf=D.accuracy?.walkforward||[];
@@ -1299,7 +1303,7 @@ function renderAccTable(){
       const cls=e<20?'tag-success':e<40?'tag-warning':'tag-error';
       const verdict=e<15?'Excellent':e<30?'Good':e<50?'Acceptable':'Investigate';
       return`<tr>
-        <td class="strong">${r.brand}</td>
+        <td class="strong">${r.brand}${newTag(r.brand)}</td>
         <td class="mono">${(+r.forecast||0).toLocaleString()}</td>
         <td class="mono">${(+r.actual||0).toLocaleString()}</td>
         <td class="mono">£${r._up.toFixed(2)}</td>
