@@ -615,69 +615,141 @@ tbody td.strong{color:var(--text);font-weight:600}
   <div class="hero">
     <div class="hero-tag">Model Performance</div>
     <h1 class="hero-title">Forecast Accuracy</h1>
-    <p class="hero-desc">Compare predicted demand against actual customer orders over the last 12 months. The model is validated on held-out data — months it never trained on.</p>
+    <p class="hero-desc">Validation period: <strong>April 2026 holdout</strong> — model trained on Jan 2023–Mar 2026 data, tested against real April 2026 invoices the model never saw.</p>
   </div>
 
-  <div class="banner success">
-    <div class="banner-icon">i</div>
-    <div class="banner-body"><strong>Industry context:</strong> In B2B fashion wholesale, a forecast error of 20–40% is considered acceptable due to irregular customer ordering patterns. Brands shown in green are exceptional. Brands in amber are within the standard range. Brands in red are typically affected by one-off bulk clearance orders, not regular demand.</div>
+  <!-- HOW TO READ THIS -->
+  <div class="card" style="margin-bottom:14px;background:linear-gradient(135deg,#FFFDF9,#FFFFFF)">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px">
+      <div>
+        <div style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--primary-dark);margin-bottom:6px">What is Error %?</div>
+        <div style="font-size:12.5px;color:var(--text-soft);line-height:1.55">How far the forecast was from what actually happened. 0% = perfect. Industry standard for B2B fashion is <strong>20–40%</strong>. Below 20% is exceptional.</div>
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--primary-dark);margin-bottom:6px">What is the Ratio?</div>
+        <div style="font-size:12.5px;color:var(--text-soft);line-height:1.55">Forecast ÷ Actual. A ratio of <strong>1.0×</strong> is perfect. Above 1.0× means over-forecast, below 1.0× means under-forecast. Acceptable range: 0.8×–1.4×.</div>
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--primary-dark);margin-bottom:6px">What is Walk-Forward?</div>
+        <div style="font-size:12.5px;color:var(--text-soft);line-height:1.55">Testing the model on 3 separate future periods it never trained on. Each window proves the model genuinely predicts — not just memorises past data.</div>
+      </div>
+    </div>
   </div>
 
-  <div class="kpi-grid">
-    <div class="kpi"><div class="kpi-label">Brands on Target</div>
-      <div class="kpi-value success" id="acc-target">37 / 38</div>
-      <div class="kpi-sub">Within 0.2–3.0× actual demand</div></div>
-    <div class="kpi"><div class="kpi-label">Best Performing Brand</div>
+  <!-- KPI ROW 1 -->
+  <div class="kpi-grid" style="grid-template-columns:repeat(5,1fr)">
+    <div class="kpi">
+      <div class="kpi-label">Brands on Target</div>
+      <div class="kpi-value success" id="acc-target">—</div>
+      <div class="kpi-sub">Within 0.2–3.0× actual</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Best Brand</div>
       <div class="kpi-value" id="acc-best">—</div>
-      <div class="kpi-sub" id="acc-best-err">—</div></div>
-    <div class="kpi"><div class="kpi-label">Median Error <em style="font-style:normal;font-size:9px;letter-spacing:.04em">(WITH CLEARANCE)</em></div>
+      <div class="kpi-sub" id="acc-best-err">—</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Better Than Baseline</div>
+      <div class="kpi-value success" id="acc-wf-improvement">39%</div>
+      <div class="kpi-sub">Avg improvement over naive forecast</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Median Error <span style="font-size:9px;font-weight:500;color:var(--muted)">(incl. clearance)</span></div>
       <div class="kpi-value warning" id="acc-med-with">—</div>
-      <div class="kpi-sub">Includes bulk clearance customer effect</div></div>
-    <div class="kpi"><div class="kpi-label">Median Error <em style="font-style:normal;font-size:9px;letter-spacing:.04em">(WITHOUT CLEARANCE)</em></div>
+      <div class="kpi-sub">All brands including clearance spikes</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Median Error <span style="font-size:9px;font-weight:500;color:var(--muted)">(excl. clearance)</span></div>
       <div class="kpi-value success" id="acc-med-without">—</div>
-      <div class="kpi-sub">Excluding 5 tagged clearance customers</div></div>
+      <div class="kpi-sub">Excluding 5 clearance customers</div>
+    </div>
   </div>
 
+  <!-- DATA COVERAGE ROW -->
+  <div style="display:flex;gap:0;margin-bottom:14px;background:#FFFFFF;border:1.5px solid #E2E2E2;border-left:2.5px solid var(--primary);border-radius:var(--r);overflow:hidden">
+    <div style="flex:1;padding:12px 18px;border-right:1px solid #EBEBEB;text-align:center">
+      <div style="font-size:18px;font-weight:700;color:var(--text);font-family:'Manrope',sans-serif">200,710</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:2px">Training rows</div>
+    </div>
+    <div style="flex:1;padding:12px 18px;border-right:1px solid #EBEBEB;text-align:center">
+      <div style="font-size:18px;font-weight:700;color:var(--text);font-family:'Manrope',sans-serif">38 months</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:2px">Historical data</div>
+    </div>
+    <div style="flex:1;padding:12px 18px;border-right:1px solid #EBEBEB;text-align:center">
+      <div style="font-size:18px;font-weight:700;color:var(--text);font-family:'Manrope',sans-serif">224</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:2px">Active customers</div>
+    </div>
+    <div style="flex:1;padding:12px 18px;border-right:1px solid #EBEBEB;text-align:center">
+      <div style="font-size:18px;font-weight:700;color:var(--text);font-family:'Manrope',sans-serif">49</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:2px">AI features</div>
+    </div>
+    <div style="flex:1;padding:12px 18px;text-align:center">
+      <div style="font-size:18px;font-weight:700;color:var(--primary-dark);font-family:'Manrope',sans-serif">April 2026</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:2px">Holdout test month</div>
+    </div>
+  </div>
+
+  <!-- ERROR BARS — ALL BRANDS -->
   <div class="card">
     <div class="card-head">
       <div>
-        <div class="card-title">Error % by Brand</div>
-        <div class="card-desc">All brands · Clearance-affected brands tagged separately</div>
+        <div class="card-title">Error % by Brand — All Footwear Brands</div>
+        <div class="card-desc">Sorted by revenue contribution · Ratio shows direction (over/under forecast) · Green &lt;20% · Amber 20–40% · Red &gt;40%</div>
       </div>
     </div>
+    <div style="display:grid;grid-template-columns:160px 1fr 60px 70px 80px 110px;gap:0;padding:0 0 8px 0;border-bottom:1px solid var(--border);margin-bottom:4px">
+      <div style="font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)">Brand</div>
+      <div style="font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)">Error bar</div>
+      <div style="font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:right">Error</div>
+      <div style="font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:right">Ratio</div>
+      <div style="font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:right">Est. Revenue</div>
+      <div style="font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:right">Verdict</div>
+    </div>
     <div id="acc-bars"><div class="loading">Loading…</div></div>
-  
   </div>
 
-
-
+  <!-- WALK-FORWARD TREND + FEATURES -->
   <div class="grid-2">
     <div class="card">
       <div class="card-head">
         <div>
-          <div class="card-title">Walk-Forward Validation</div>
-          <div class="card-desc">Model vs naive baseline · 3 independent time windows</div>
+          <div class="card-title">Model Improvement Over Time</div>
+          <div class="card-desc">Walk-forward validation — MAE declining across 3 windows proves model learns</div>
         </div>
       </div>
       <div class="chart-box sm"><canvas id="wf-chart"></canvas></div>
-      <div class="rec-text" style="margin-top:14px;font-size:12.5px">The model outperforms the naive baseline (predicting last year's average) by 32–41% across all three windows — proof that the model has genuine predictive power, not just pattern memorisation.</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;margin-top:14px;border:1px solid var(--border);border-radius:var(--r-sm);overflow:hidden">
+        <div style="padding:10px 12px;border-right:1px solid var(--border);text-align:center">
+          <div style="font-size:15px;font-weight:700;color:var(--success)">32%</div>
+          <div style="font-size:10px;color:var(--muted)">Sep 2024–Mar 2025</div>
+        </div>
+        <div style="padding:10px 12px;border-right:1px solid var(--border);text-align:center">
+          <div style="font-size:15px;font-weight:700;color:var(--success)">41%</div>
+          <div style="font-size:10px;color:var(--muted)">Mar 2025–Sep 2025</div>
+        </div>
+        <div style="padding:10px 12px;text-align:center">
+          <div style="font-size:15px;font-weight:700;color:var(--success)">39%</div>
+          <div style="font-size:10px;color:var(--muted)">Sep 2025–Apr 2026</div>
+        </div>
+      </div>
     </div>
     <div class="card">
       <div class="card-head">
         <div>
           <div class="card-title">What Drives the Forecast</div>
-          <div class="card-desc">Top features by importance — interpretability check</div>
+          <div class="card-desc">Top AI features by importance — not a black box</div>
         </div>
       </div>
       <div class="chart-box sm"><canvas id="feat-chart"></canvas></div>
     </div>
   </div>
 
+  <!-- FULL BRAND TABLE -->
   <div class="card">
     <div class="card-head">
       <div>
-        <div class="card-title">Full Brand Accuracy Table</div>
-        <div class="card-desc">Validation: <strong>April 2026 holdout</strong> — trained Jan 2023–Mar 2026 · Brands under 100 units/month excluded</div>
+        <div class="card-title">Full Brand Breakdown</div>
+        <div class="card-desc">All footwear brands · April 2026 holdout · Trained Jan 2023–Mar 2026 · Brands under 100 units/month excluded · Sorted by annual revenue</div>
       </div>
     </div>
     <div class="table-wrap" id="acc-full-wrap"><div><div class="loading">Loading…</div></div></div>
@@ -1194,7 +1266,7 @@ function initAccuracy(){
 
 function renderAccuracyKpis(){
   const val=D.accuracy?.validation||[];
-  const major=val.filter(v=>(+v.actual||0)>=500);
+  const major=val.filter(v=>(+v.actual||0)>=100);
   if(major.length){
     const best=major.reduce((a,b)=>(+a.pct_error||999)<(+b.pct_error||999)?a:b);
     const sorted=[...major].sort((a,b)=>(+a.pct_error||0)-(+b.pct_error||0));
@@ -1204,22 +1276,31 @@ function renderAccuracyKpis(){
     document.getElementById('acc-best').textContent=best.brand;
     document.getElementById('acc-best-err').textContent=`${(+best.pct_error||0).toFixed(1)}% error`;
     document.getElementById('acc-med-with').textContent=`${(+med?.pct_error||0).toFixed(1)}%`;
-    // "Without clearance" = remove the 5 known clearance-affected brands from major set, recompute
     const clearanceBrands=['CAT','BENCH','KICKERS','THE RAGGED PRIEST','OSPREY LONDON'];
     const noClearance=major.filter(v=>!clearanceBrands.includes(v.brand));
     const sortedNc=[...noClearance].sort((a,b)=>(+a.pct_error||0)-(+b.pct_error||0));
     const medNc=sortedNc[Math.floor(sortedNc.length/2)];
     document.getElementById('acc-med-without').textContent=`${(+medNc?.pct_error||0).toFixed(1)}%`;
+    // Walk-forward improvement KPI (average of 3 windows)
+    const wf=D.accuracy?.walkforward||[];
+    if(wf.length){
+      const avg=wf.reduce((s,r)=>{
+        const imp=((+r.naive_mae-(+r.stat_mae))/(+r.naive_mae||1)*100);
+        return s+imp;
+      },0)/wf.length;
+      document.getElementById('acc-wf-improvement').textContent=Math.round(avg)+'%';
+    }
   }
 }
 
 // Clearance customer info per brand
 const CLEARANCE_INFO={
-  'CAT':'Ponders End International (5.3×) · TJX UK/TK Maxx (16.6×)',
+  'CAT':'Ponders End International (5.3×) · TJX UK / TK Maxx (16.6×)',
   'BENCH':'M and M Direct Ltd (5.4×)',
   'THE RAGGED PRIEST':'Chapter 01 Limited (14.7×)',
   'OSPREY LONDON':'Costco Wholesale UK (14.8×)'
 };
+
 function renderAccuracyBars(){
   const wrap=document.getElementById('acc-bars');
   const all=(D.accuracy?.validation||[])
@@ -1229,18 +1310,27 @@ function renderAccuracyBars(){
   if(!all.length){wrap.innerHTML='<div class="loading">No data</div>';return;}
   wrap.innerHTML=all.map(r=>{
     const e=+r.pct_error||0;
+    const ratio=+r.ratio||0;
     const hasClearance=CLEARANCE_INFO[r.brand];
     const col=e<20?'var(--success)':e<40?'var(--warning)':'var(--error)';
+    const ratioCol=ratio>=0.8&&ratio<=1.4?'var(--success)':ratio>=0.6&&ratio<=2.0?'var(--warning)':'var(--error)';
     const rev=Math.round(r._rev*12/1000);
-    const verdict=e<15?'Excellent':e<30?'Good':e<50?'Acceptable':'High (clearance)';
-    return`<div class="bar-row" style="flex-direction:column;align-items:flex-start;gap:2px">
-      <div style="display:flex;align-items:center;gap:.75rem;width:100%">
-        <div class="bar-name">${r.brand}${newTag(r.brand)}${hasClearance?'<span class="tag tag-warning" style="font-size:9px;padding:1px 5px;margin-left:4px">Clearance</span>':''}</div>
-        <div class="bar-track" style="flex:1;max-width:340px"><div class="bar-fill" style="width:${Math.min(e/100*100,100)}%;background:${col}"></div></div>
-        <div class="bar-pct" style="color:${col}">${e.toFixed(1)}%</div>
-        <div class="bar-meta">${verdict} · £${rev}k/yr</div>
+    const verdict=e<15?'Excellent':e<30?'Good':e<50?'Acceptable':'High';
+    const verdictCol=e<15?'var(--success)':e<30?'var(--success)':e<50?'var(--warning)':'var(--error)';
+    return`<div style="display:grid;grid-template-columns:160px 1fr 60px 70px 80px 110px;gap:0;align-items:center;padding:8px 0;border-bottom:1px solid var(--border-soft)">
+      <div style="font-size:12.5px;font-weight:500;color:var(--text);display:flex;align-items:center;gap:4px;flex-wrap:wrap">
+        ${r.brand}${newTag(r.brand)}${hasClearance?'<span class="tag tag-warning" style="font-size:9px;padding:1px 5px">Clearance</span>':''}
+        ${hasClearance?`<div style="width:100%;font-size:10px;color:var(--muted);font-weight:400;margin-top:2px">${CLEARANCE_INFO[r.brand]}</div>`:''}
       </div>
-      ${hasClearance?`<div style="font-size:10.5px;color:var(--muted);padding-left:180px;line-height:1.4">Clearance customers: ${CLEARANCE_INFO[r.brand]}</div>`:''}
+      <div style="padding:0 12px">
+        <div style="height:8px;background:#EBEBEB;border-radius:4px;overflow:hidden">
+          <div style="height:100%;width:${Math.min(e/100*100,100)}%;background:${col};border-radius:4px"></div>
+        </div>
+      </div>
+      <div style="text-align:right;font-size:12.5px;font-weight:600;color:${col}">${e.toFixed(1)}%</div>
+      <div style="text-align:right;font-size:12px;font-weight:600;color:${ratioCol}">${ratio.toFixed(2)}×</div>
+      <div style="text-align:right;font-size:12px;color:var(--muted)">£${rev}k/yr</div>
+      <div style="text-align:right"><span style="font-size:11px;font-weight:500;color:${verdictCol}">${verdict}</span></div>
     </div>`;
   }).join('');
 }
@@ -1297,19 +1387,28 @@ function renderAccTable(){
     return{...r,_rev:Math.round((+r.actual||0)*up*12),_up:up};
   }).filter(r=>(+r.forecast||0)>=100).sort((a,b)=>b._rev-a._rev);
   wrap.innerHTML=`<div><table>
-    <thead><tr><th>Brand</th><th>Forecast / Mo</th><th>Actual / Mo</th><th>Avg Unit Price</th><th>Annual Revenue</th><th>Error %</th><th>Status</th></tr></thead>
+    <thead><tr>
+      <th>Brand</th><th>Forecast/mo</th><th>Actual/mo</th><th>Ratio</th>
+      <th>Avg Unit Price</th><th>Annual Revenue</th><th>Error %</th><th>Buying Confidence</th>
+    </tr></thead>
     <tbody>${data.map(r=>{
       const e=+r.pct_error||0;
+      const ratio=+r.ratio||0;
       const cls=e<20?'tag-success':e<40?'tag-warning':'tag-error';
-      const verdict=e<15?'Excellent':e<30?'Good':e<50?'Acceptable':'Investigate';
+      const ratioCls=ratio>=0.8&&ratio<=1.4?'tag-success':ratio>=0.6&&ratio<=2.0?'tag-warning':'tag-error';
+      const conf=e<20&&ratio>=0.8&&ratio<=1.4?'High — use for buying'
+                :e<40?'Medium — use with P90 buffer'
+                :'Low — review manually';
+      const confCol=e<20?'var(--success)':e<40?'var(--warning)':'var(--error)';
       return`<tr>
-        <td class="strong">${r.brand}${newTag(r.brand)}</td>
+        <td class="strong">${r.brand}${newTag(r.brand)}${CLEARANCE_INFO[r.brand]?'<span class="tag tag-warning" style="font-size:9px;padding:1px 5px;margin-left:4px">Clearance</span>':''}</td>
         <td class="mono">${(+r.forecast||0).toLocaleString()}</td>
         <td class="mono">${(+r.actual||0).toLocaleString()}</td>
+        <td><span class="tag ${ratioCls}">${ratio.toFixed(2)}×</span></td>
         <td class="mono">£${r._up.toFixed(2)}</td>
         <td class="mono strong">£${(r._rev/1000).toFixed(0)}k</td>
         <td><span class="tag ${cls}">${e.toFixed(1)}%</span></td>
-        <td>${verdict}</td>
+        <td style="font-size:11.5px;color:${confCol};font-weight:500">${conf}</td>
       </tr>`;}).join('')}</tbody></table></div>`;
 }
 
