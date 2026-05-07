@@ -519,9 +519,10 @@ tbody td.strong{color:var(--text);font-weight:600}
     <div class="fld">
       <div class="fld-label">Show only</div>
       <select id="bp-flag" onchange="renderBuyPlan()">
-        <option value="ALL">Actionable lines (buy qty &gt; 0)</option>
-        <option value="below_moq">Below MOQ (need review)</option>
-        <option value="new_style">New styles</option>
+        <option value="ALL">All lines</option>
+        <option value="ok">Actionable (buy qty &gt; 0)</option>
+        <option value="below_moq">Below MOQ — needs review</option>
+        <option value="new_style">New styles only</option>
       </select>
     </div>
     <div class="fld" style="margin-left:auto">
@@ -789,11 +790,7 @@ async function boot(){
       D[f]=r.ok?await r.json():fb(f);
     }catch(e){D[f]=fb(f);}
   }
-  // Remove apparel brands
-  ['monthly','sku'].forEach(k=>{if(D.forecast?.[k])D.forecast[k]=D.forecast[k].filter(r=>isFootwear(r.brand))});
-  ['lines','brand_summary'].forEach(k=>{if(D.buyplan?.[k])D.buyplan[k]=D.buyplan[k].filter(r=>isFootwear(r.brand))});
-  ['crosssell','newstyle','reorder'].forEach(k=>{if(D.recommendations?.[k])D.recommendations[k]=D.recommendations[k].filter(r=>isFootwear(r.brand))});
-  if(D.accuracy?.validation)D.accuracy.validation=D.accuracy.validation.filter(r=>isFootwear(r.brand));
+  // Data is pre-filtered at export — no frontend filtering needed
   init();
 }
 
@@ -983,6 +980,7 @@ function initBuyPlan(){
   // Pull brand list from BOTH brand_summary AND lines
   const fromSum=(D.buyplan?.brand_summary||[]).map(r=>r.brand);
   const fromLines=(D.buyplan?.lines||[]).map(r=>r.brand);
+  // Show all brands present in data — export script already excluded apparel
   const brands=[...new Set([...fromSum,...fromLines])].filter(Boolean).sort();
   const bsel=document.getElementById('bp-brand');
   brands.forEach(b=>{const o=document.createElement('option');o.value=b;o.textContent=b;bsel.appendChild(o);});
@@ -999,16 +997,21 @@ function initBuyPlan(){
 
 function getBuyPlanRows(){
   const brand=document.getElementById('bp-brand').value;
-  const months=getMultiVals('bp-month-pop');
+  const selectedMonths=getMultiVals('bp-month-pop');
+  const allMonths=[...new Set((D.buyplan?.lines||[]).map(r=>r.month))].filter(Boolean);
   const style=document.getElementById('bp-style').value;
   const flag=document.getElementById('bp-flag').value;
   let rows=D.buyplan?.lines||[];
+  // Brand filter
   if(brand!=='ALL')rows=rows.filter(r=>r.brand===brand);
-  if(months.length<((D.buyplan?.lines||[]).map(r=>r.month).filter((v,i,a)=>a.indexOf(v)===i).length)){
-    rows=rows.filter(r=>months.includes(r.month));
+  // Month filter — only apply if user actually deselected some months
+  if(selectedMonths.length>0 && selectedMonths.length<allMonths.length){
+    rows=rows.filter(r=>selectedMonths.includes(r.month));
   }
+  // Style filter
   if(style!=='ALL')rows=rows.filter(r=>r.style===style);
-  if(flag==='ALL')rows=rows.filter(r=>(+r.buy_qty||0)>0);
+  // Flag filter
+  if(flag==='ok')rows=rows.filter(r=>(+r.buy_qty||0)>0);
   else if(flag==='below_moq')rows=rows.filter(r=>+r.below_moq);
   else if(flag==='new_style')rows=rows.filter(r=>+r.new_style);
   return rows;
