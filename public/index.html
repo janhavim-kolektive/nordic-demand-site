@@ -361,7 +361,7 @@ tbody td.strong{color:var(--text);font-weight:600}
 <!-- ════════ HOME ════════════════════════════════════════ -->
 <div class="page active" id="page-home">
   <div class="hero">
-    <div class="hero-tag">Nordic Kolektive Ventures · Nordic Kolektive Ventures</div>
+    <div class="hero-tag">Nordic Kolektive Ventures</div>
     <p class="hero-desc" style="margin-top:6px">AI-powered demand forecasting and buying recommendations for smarter inventory planning. The system forecasts how much of each brand, style, colour and size your customers will need — and turns those forecasts into vendor-ready orders.</p>
   </div>
 
@@ -500,7 +500,7 @@ tbody td.strong{color:var(--text);font-weight:600}
   <div class="filter-row">
     <div class="fld">
       <div class="fld-label">Brand</div>
-      <select id="bp-brand" onchange="renderBuyPlan()"><option value="ALL">All brands</option></select>
+      <select id="bp-brand" onchange="updateBpStyles();renderBuyPlan()"><option value="ALL">All brands</option></select>
     </div>
     <div class="fld">
       <div class="fld-label">Months</div>
@@ -519,8 +519,8 @@ tbody td.strong{color:var(--text);font-weight:600}
     <div class="fld">
       <div class="fld-label">Show only</div>
       <select id="bp-flag" onchange="renderBuyPlan()">
-        <option value="ALL">All lines</option>
-        <option value="ok">Actionable (buy qty &gt; 0)</option>
+        <option value="ok" selected>Actionable (buy qty &gt; 0)</option>
+        <option value="ALL">All lines (including zero qty)</option>
         <option value="below_moq">Below MOQ — needs review</option>
         <option value="new_style">New styles only</option>
       </select>
@@ -922,7 +922,11 @@ function renderSKU(brand,months){
     return;
   }
   let rows=(D.forecast?.sku||[]).filter(r=>r.brand===brand);
-  if(months.length)rows=rows.filter(r=>months.includes((r.year_month||'').slice(0,7)));
+  // Only filter by month if user selected specific months (not all)
+  const allFcMonths=[...new Set((D.forecast?.sku||[]).filter(r=>r.brand===brand).map(r=>(r.year_month||'').slice(0,7)))];
+  if(months.length>0 && months.length<allFcMonths.length){
+    rows=rows.filter(r=>months.includes((r.year_month||'').slice(0,7)));
+  }
   if(!rows.length){wrap.innerHTML='<div><div class="loading">No SKU data for this selection.</div></div>';return;}
   const grouped={};
   rows.forEach(r=>{
@@ -976,6 +980,22 @@ function renderForecastValidation(){
 }
 
 /* ══ BUY PLAN PAGE ════════════════════════════════════ */
+function updateBpStyles(){
+  const brand=document.getElementById('bp-brand').value;
+  const lines=D.buyplan?.lines||[];
+  const filtered=brand==='ALL'?lines:lines.filter(r=>r.brand===brand);
+  const styles=[...new Set(filtered.map(r=>r.style))].filter(Boolean).sort();
+  const ssel=document.getElementById('bp-style');
+  const cur=ssel.value;
+  ssel.innerHTML='<option value="ALL">All styles</option>';
+  styles.slice(0,300).forEach(s=>{
+    const o=document.createElement('option');
+    o.value=s;o.textContent=s;
+    if(s===cur)o.selected=true;
+    ssel.appendChild(o);
+  });
+}
+
 function initBuyPlan(){
   // Pull brand list from BOTH brand_summary AND lines
   const fromSum=(D.buyplan?.brand_summary||[]).map(r=>r.brand);
@@ -988,9 +1008,7 @@ function initBuyPlan(){
   const months=[...new Set((D.buyplan?.lines||[]).map(r=>r.month))].filter(Boolean).sort();
   buildMonthMulti('bp-month-pop','bp-month-label',months,renderBuyPlan,months);
 
-  const styles=[...new Set((D.buyplan?.lines||[]).map(r=>r.style))].filter(Boolean).sort().slice(0,200);
-  const ssel=document.getElementById('bp-style');
-  styles.forEach(s=>{const o=document.createElement('option');o.value=s;o.textContent=s;ssel.appendChild(o);});
+  updateBpStyles();
 
   renderBuyPlan();
 }
@@ -1004,9 +1022,10 @@ function getBuyPlanRows(){
   let rows=D.buyplan?.lines||[];
   // Brand filter
   if(brand!=='ALL')rows=rows.filter(r=>r.brand===brand);
-  // Month filter — only apply if user actually deselected some months
-  if(selectedMonths.length>0 && selectedMonths.length<allMonths.length){
-    rows=rows.filter(r=>selectedMonths.includes(r.month));
+  // Month filter — only apply when user has explicitly selected fewer than all months
+  const monthsToUse=selectedMonths.length>0?selectedMonths:allMonths;
+  if(monthsToUse.length<allMonths.length){
+    rows=rows.filter(r=>monthsToUse.includes(r.month));
   }
   // Style filter
   if(style!=='ALL')rows=rows.filter(r=>r.style===style);
