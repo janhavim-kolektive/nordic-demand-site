@@ -98,7 +98,7 @@ with open("public/data/buyplan.json", "w") as f:
     json.dump({
         "kpis": bp_kpis.to_dict(orient="records")[0],
         "brand_summary": brand_summary.to_dict(orient="records"),
-        "lines": bp_lines.to_dict(orient="records")
+        "lines": bp_lines.fillna(0).to_dict(orient="records")
     }, f)
 print(f"    buyplan.json: {len(bp_lines):,} lines")
 
