@@ -784,7 +784,7 @@ const PAGES={home:'Overview',forecast:'Forecast',buyplan:'Buy Plan & Orders',
              recs:'Recommendations',accuracy:'Accuracy'};
 
 async function fetchJSON(name){
-  const paths=['data/'+name+'.json','./data/'+name+'.json','public/data/'+name+'.json'];
+  const paths=['data/'+name+'.json','./data/'+name+'.json'];
   for(const path of paths){
     try{
       const r=await fetch(path);
