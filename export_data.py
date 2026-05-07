@@ -43,7 +43,7 @@ sku = bq(f"""
     WHERE p50 > 0
     GROUP BY brand, year_month, style, colour, size
     ORDER BY brand, year_month, style, p50 DESC
-    LIMIT 50000
+
 """)
 
 with open("public/data/forecast.json", "w") as f:
