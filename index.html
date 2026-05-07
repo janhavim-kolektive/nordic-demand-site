@@ -787,9 +787,14 @@ async function fetchJSON(name){
   const paths=['data/'+name+'.json','./data/'+name+'.json'];
   for(const path of paths){
     try{
-      const r=await fetch(path);
-      if(r.ok){const data=await r.json();console.log('[OK]',name,'from',path);return data;}
-    }catch(e){}
+      const r=await fetch(path,{cache:'no-store'});
+      if(r.ok){
+        const text=await r.text();
+        const data=JSON.parse(text);
+        console.log('[OK]',name,'from',path,'lines:',(data.lines||data.monthly||[]).length);
+        return data;
+      }
+    }catch(e){console.warn('[ERR]',name,path,e.message);}
   }
   console.warn('[FALLBACK] Could not load',name);return null;
 }
