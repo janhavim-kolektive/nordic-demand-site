@@ -531,7 +531,7 @@ tbody td.strong{color:var(--text);font-weight:600}
     </div>
   </div>
 
-  <div class="kpi-grid">
+  <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr)">
     <div class="kpi"><div class="kpi-label">Total Units to Buy</div>
       <div class="kpi-value primary" id="bp-total">—</div>
       <div class="kpi-sub">Across selected filters</div></div>
@@ -541,6 +541,12 @@ tbody td.strong{color:var(--text);font-weight:600}
     <div class="kpi"><div class="kpi-label">Lines Need Review</div>
       <div class="kpi-value warning" id="bp-review">—</div>
       <div class="kpi-sub">Below vendor MOQ</div></div>
+    <div class="kpi" id="bp-acc-kpi">
+      <div class="kpi-label">Forecast Accuracy</div>
+      <div class="kpi-value" id="bp-acc-value">—</div>
+      <div class="kpi-sub" id="bp-acc-sub">Select a brand to see accuracy</div>
+      <div style="margin-top:8px" id="bp-acc-tag"></div>
+    </div>
   </div>
 
   <div class="card">
@@ -1054,6 +1060,43 @@ function getBuyPlanRows(){
   else if(flag==='new_style')rows=rows.filter(r=>+r.new_style);
   // flag==='ALL' shows everything
   return rows;
+}
+
+function renderBpAccuracy(brand){
+  const val=D.accuracy?.validation||[];
+  const accEl=document.getElementById('bp-acc-value');
+  const subEl=document.getElementById('bp-acc-sub');
+  const tagEl=document.getElementById('bp-acc-tag');
+  if(!accEl)return;
+  if(brand==='ALL'){
+    const all=val.filter(r=>(+r.actual||0)>=100);
+    if(!all.length){accEl.textContent='—';subEl.textContent='No accuracy data';tagEl.innerHTML='';return;}
+    const avg=all.reduce((s,r)=>s+(+r.pct_error||0),0)/all.length;
+    accEl.textContent=avg.toFixed(1)+'%';
+    accEl.className='kpi-value '+(avg<20?'success':avg<40?'warning':'error');
+    subEl.textContent='Avg MAE across all brands';
+    const conf=avg<20?'High — use P50 for buying':avg<40?'Medium — add P90 buffer':'Low — review manually';
+    const confCol=avg<20?'tag-success':avg<40?'tag-warning':'tag-error';
+    tagEl.innerHTML=`<span class="tag ${confCol}" style="font-size:11px">${conf}</span>`;
+    return;
+  }
+  const rec=val.find(r=>r.brand===brand);
+  if(!rec){
+    accEl.textContent='N/A';
+    accEl.className='kpi-value';
+    subEl.textContent='No validation data for this brand';
+    tagEl.innerHTML='<span class="tag tag-neutral" style="font-size:11px">Not validated yet</span>';
+    return;
+  }
+  const err=+rec.pct_error||0;
+  const ratio=+rec.ratio||0;
+  accEl.textContent=err.toFixed(1)+'% MAE';
+  accEl.className='kpi-value '+(err<20?'success':err<40?'warning':'error');
+  subEl.textContent='Ratio '+ratio.toFixed(2)+'× actual · April 2026 holdout';
+  const conf=err<20&&ratio>=0.8&&ratio<=1.4?'High — use P50 for buying':
+             err<40?'Medium — add P90 buffer':'Low — review manually';
+  const confCol=err<20?'tag-success':err<40?'tag-warning':'tag-error';
+  tagEl.innerHTML=`<span class="tag ${confCol}" style="font-size:11px">${conf}</span>`;
 }
 
 function renderBuyPlan(){
