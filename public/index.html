@@ -1283,8 +1283,7 @@ function saveCustomize(){
   const rowData={'Customer':r.customer,'Type':r._type==='style'?'New Style':'Cross-sell','Brand':r.brand,'Style':r.style||'N/A','Months':months,'Qty/Month':qty,'Total Buy':parseInt(months||3)*parseInt(qty||0),'Score':r._score10.toFixed(1),'Notes':notes};
   const fname='Pitch_'+(r.customer||'x').replace(/[^A-Za-z0-9]/g,'_').slice(0,30)+'_'+new Date().toISOString().slice(0,10);
   try{if(typeof XLSX!=='undefined'){const ws=XLSX.utils.json_to_sheet([rowData]);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,'Pitch',ws);XLSX.writeFile(wb,fname+'.xlsx');}}
-  catch(e){const keys=Object.keys(rowData);const csv=[keys.join(','),keys.map(k=>'"'+String(rowData[k]||'')+'"').join(',')].join('
-');const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download=fname+'.csv';document.body.appendChild(a);a.click();document.body.removeChild(a);}
+  catch(e){const keys=Object.keys(rowData);const csv=[keys.join(','),keys.map(k=>'"'+String(rowData[k]||'')+'"').join(',')].join('\n');const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download=fname+'.csv';document.body.appendChild(a);a.click();document.body.removeChild(a);}
   closeModal();
 }
 
