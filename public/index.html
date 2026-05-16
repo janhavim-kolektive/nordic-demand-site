@@ -1101,6 +1101,7 @@ function renderBpAccuracy(brand){
 }
 
 function renderBuyPlan(){
+  renderBpAccuracy(document.getElementById("bp-brand").value);
   const selMonths=getMultiVals('bp-month-pop');
   const allLines=D.buyplan?.lines||[];
   const wrap=document.getElementById('bp-wrap');

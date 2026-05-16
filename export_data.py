@@ -91,7 +91,6 @@ bp_lines = bq(f"""
        OR COALESCE(forecast_p90,0) > 0
        OR COALESCE(buy_qty,0) > 0
     ORDER BY brand, style, colour, size, month
-    LIMIT 80000
 """)
 
 with open("public/data/buyplan.json", "w") as f:
