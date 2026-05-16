@@ -1048,10 +1048,11 @@ function getBuyPlanRows(){
   if(brand!=='ALL')rows=rows.filter(r=>r.brand===brand);
   // Month filter — only apply if some months are selected (not all or none)
   const allMonths=[...new Set((D.buyplan?.lines||[]).map(r=>r.month))].filter(Boolean);
-  if(selMonths.length>0 && selMonths.length<allMonths.length){
+  // Only filter months if a subset is selected; all selected = no filter; none = empty
+  if(selMonths.length===0){return [];}
+  if(selMonths.length<allMonths.length){
     rows=rows.filter(r=>selMonths.includes(r.month));
-  }
-  if(selMonths.length===0){return [];} // nothing selected = nothing to show
+  } // nothing selected = nothing to show
   // Style filter
   if(style!=='ALL')rows=rows.filter(r=>r.style===style);
   // Flag filter
