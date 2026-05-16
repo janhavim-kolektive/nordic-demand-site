@@ -1020,6 +1020,55 @@ function renderForecastValidation(){
 }
 
 /* ══ BUY PLAN PAGE ════════════════════════════════════ */
+function getBuyPlanRows(){
+  const brand=document.getElementById('bp-brand').value;
+  const selMonths=getMultiVals('bp-month-pop');
+  const style=document.getElementById('bp-style').value;
+  const flag=document.getElementById('bp-flag').value;
+  let rows=D.buyplan?.lines||[];
+  if(brand!=='ALL')rows=rows.filter(r=>r.brand===brand);
+  const allMonths=[...new Set((D.buyplan?.lines||[]).map(r=>r.month))].filter(Boolean);
+  if(selMonths.length===0){return [];}
+  if(selMonths.length<allMonths.length){rows=rows.filter(r=>selMonths.includes(r.month));}
+  if(style!=='ALL')rows=rows.filter(r=>r.style===style);
+  if(flag==='ACTIONABLE')rows=rows.filter(r=>(+r.buy_qty||0)>0);
+  else if(flag==='below_moq')rows=rows.filter(r=>+r.below_moq);
+  else if(flag==='new_style')rows=rows.filter(r=>+r.new_style);
+  return rows;
+}
+
+function renderBuyPlan(){
+  renderBpAccuracy(document.getElementById('bp-brand').value);
+  const selMonths=getMultiVals('bp-month-pop');
+  const allLines=D.buyplan?.lines||[];
+  const wrap=document.getElementById('bp-wrap');
+  if(!allLines.length){
+    wrap.innerHTML='<div><div class="loading">Buy plan data not loaded. Check browser console.</div></div>';
+    ['bp-total','bp-lines','bp-review'].forEach(id=>document.getElementById(id).textContent='--');
+    return;
+  }
+  if(selMonths.length===0){wrap.innerHTML='<div><div class="loading">Please select at least one month.</div></div>';return;}
+  const rows=getBuyPlanRows();
+  const total=rows.reduce((s,r)=>s+(+r.buy_qty||0),0);
+  const review=rows.filter(r=>+r.below_moq).length;
+  document.getElementById('bp-total').textContent=total.toLocaleString();
+  document.getElementById('bp-lines').textContent=rows.length.toLocaleString();
+  document.getElementById('bp-review').textContent=review.toLocaleString();
+  const shown=rows.slice(0,500);
+  if(!shown.length){wrap.innerHTML='<div><div class="loading">No lines match filters. Try "All lines" in Show Only.</div></div>';return;}
+  let html='<div><table><thead><tr><th>Brand</th><th>Style</th><th>Colour</th><th>Size</th><th>Month</th><th>P50 Expected</th><th>P90 High</th><th>Buy Qty</th><th>MOQ</th><th>Flags</th></tr></thead><tbody>';
+  shown.forEach(r=>{
+    const flags=[];
+    if(+r.new_style)flags.push('<span class="tag tag-info">New Style</span>');
+    if(+r.below_moq)flags.push('<span class="tag tag-warning">Below MOQ</span>');
+    if(+r.zero_fcst)flags.push('<span class="tag tag-error">Zero Forecast</span>');
+    html+='<tr><td class="strong">'+r.brand+newTag(r.brand)+'</td><td class="mono">'+r.style+'</td><td>'+(r.colour||'--')+'</td><td class="mono">'+(r.size||'--')+'</td><td class="mono">'+r.month+'</td><td class="mono">'+( +r.p50||0).toLocaleString()+'</td><td class="mono">'+( +r.p90||0).toLocaleString()+'</td><td class="mono strong">'+( +r.buy_qty||0).toLocaleString()+'</td><td class="mono">'+(r.moq||'--')+'</td><td>'+(flags.join(' ')||'<span class="tag tag-success">OK</span>')+'</td></tr>';
+  });
+  html+='</tbody></table></div>';
+  if(rows.length>500)html+='<div class="banner info" style="margin-top:14px"><div class="banner-icon">i</div><div class="banner-body">Showing 500 of '+rows.length.toLocaleString()+' rows. Click <strong>Export</strong> for the full dataset.</div></div>';
+  wrap.innerHTML=html;
+}
+
 function initBuyPlan(){
   // Pull brand list from BOTH brand_summary AND lines
   const fromSum=(D.buyplan?.brand_summary||[]).map(r=>r.brand);
