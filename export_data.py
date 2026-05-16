@@ -92,6 +92,7 @@ bp_lines = bq(f"""
        OR COALESCE(buy_qty,0) > 0)
       AND brand NOT IN ('BENCH','Original Penguin','THE RAGGED PRIEST','DFND',
                         'Salvation Brands','Broad Textile','Rockport Apparel','Rockport Comfort')
+      AND COALESCE(buy_qty,0) > 0
     ORDER BY brand, style, colour, size, month
 """)
 
