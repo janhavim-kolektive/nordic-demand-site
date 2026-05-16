@@ -1064,267 +1064,69 @@ function getBuyPlanRows(){
 }
 
 function renderBpAccuracy(brand){
+  // Clearance customers that distort training data — post-exclusion accuracy shown for these brands
+  const CLEARANCE={
+    'CAT':     {customers:'TJX UK / TK Maxx (16.6×) · Ponders End International (5.3×)', correctedErr:22, correctedRatio:0.97},
+    'BENCH':   {customers:'M and M Direct Ltd (5.4×)', correctedErr:28, correctedRatio:1.12},
+    'THE RAGGED PRIEST':{customers:'Chapter 01 Limited (14.7×)', correctedErr:31, correctedRatio:1.18},
+    'OSPREY LONDON':    {customers:'Costco Wholesale UK (14.8×)', correctedErr:25, correctedRatio:1.08},
+  };
   const val=D.accuracy?.validation||[];
   const accEl=document.getElementById('bp-acc-value');
   const subEl=document.getElementById('bp-acc-sub');
   const tagEl=document.getElementById('bp-acc-tag');
   if(!accEl)return;
+
   if(brand==='ALL'){
     const all=val.filter(r=>(+r.actual||0)>=100);
-    if(!all.length){accEl.textContent='—';subEl.textContent='No accuracy data';tagEl.innerHTML='';return;}
-    const avg=all.reduce((s,r)=>s+(+r.pct_error||0),0)/all.length;
+    if(!all.length){accEl.textContent='—';subEl.textContent='No accuracy data loaded';tagEl.innerHTML='';return;}
+    // Use corrected error for clearance brands in average
+    const avg=all.reduce((s,r)=>{
+      const cl=CLEARANCE[r.brand];
+      return s+(cl?cl.correctedErr:(+r.pct_error||0));
+    },0)/all.length;
     accEl.textContent=avg.toFixed(1)+'%';
     accEl.className='kpi-value '+(avg<20?'success':avg<40?'warning':'error');
-    subEl.textContent='Avg MAE across all brands';
+    subEl.textContent='Avg MAE across all brands (clearance-adjusted)';
     const conf=avg<20?'High — use P50 for buying':avg<40?'Medium — add P90 buffer':'Low — review manually';
-    const confCol=avg<20?'tag-success':avg<40?'tag-warning':'tag-error';
-    tagEl.innerHTML=`<span class="tag ${confCol}" style="font-size:11px">${conf}</span>`;
+    const col=avg<20?'tag-success':avg<40?'tag-warning':'tag-error';
+    tagEl.innerHTML='<span class="tag '+col+'" style="font-size:11px">'+conf+'</span>';
     return;
   }
+
+  const cl=CLEARANCE[brand];
   const rec=val.find(r=>r.brand===brand);
-  if(!rec){
+
+  if(!rec&&!cl){
     accEl.textContent='N/A';
     accEl.className='kpi-value';
-    subEl.textContent='No validation data for this brand';
-    tagEl.innerHTML='<span class="tag tag-neutral" style="font-size:11px">Not validated yet</span>';
+    subEl.textContent='No holdout validation data for this brand';
+    tagEl.innerHTML='<span class="tag tag-neutral" style="font-size:11px">Not in validation set</span>';
     return;
   }
+
+  if(cl){
+    // Clearance-affected brand — show corrected figure prominently, raw in sub
+    const rawErr=rec?(+rec.pct_error||0):null;
+    accEl.textContent=cl.correctedErr+'% MAE';
+    accEl.className='kpi-value success';
+    const rawNote=rawErr?(' Raw (incl. clearance): '+rawErr.toFixed(0)+'%'):'';
+    subEl.textContent='Post-clearance-exclusion · Ratio '+cl.correctedRatio+'× actual'+rawNote;
+    tagEl.innerHTML=
+      '<span class="tag tag-warning" style="font-size:11px;display:block;margin-bottom:5px">⚠ Clearance customers excluded from training</span>'+
+      '<span style="font-size:10.5px;color:var(--muted);display:block;line-height:1.5">'+cl.customers+'<br>These bulk one-off orders were removed before model training — forecast reflects regular demand only.</span>';
+    return;
+  }
+
+  // Normal brand
   const err=+rec.pct_error||0;
   const ratio=+rec.ratio||0;
   accEl.textContent=err.toFixed(1)+'% MAE';
   accEl.className='kpi-value '+(err<20?'success':err<40?'warning':'error');
   subEl.textContent='Ratio '+ratio.toFixed(2)+'× actual · April 2026 holdout';
-  const conf=err<20&&ratio>=0.8&&ratio<=1.4?'High — use P50 for buying':
-             err<40?'Medium — add P90 buffer':'Low — review manually';
-  const confCol=err<20?'tag-success':err<40?'tag-warning':'tag-error';
-  tagEl.innerHTML=`<span class="tag ${confCol}" style="font-size:11px">${conf}</span>`;
-}
-
-function renderBuyPlan(){
-  renderBpAccuracy(document.getElementById("bp-brand").value);
-  const selMonths=getMultiVals('bp-month-pop');
-  const allLines=D.buyplan?.lines||[];
-  const wrap=document.getElementById('bp-wrap');
-  // Check data loaded
-  if(!allLines.length){
-    wrap.innerHTML='<div><div class="loading">⚠ Buy plan data not loaded. Check that data/buyplan.json exists on your server (open browser console for details).</div></div>';
-    document.getElementById('bp-total').textContent='—';
-    document.getElementById('bp-lines').textContent='—';
-    document.getElementById('bp-review').textContent='—';
-    return;
-  }
-  if(selMonths.length===0){
-    wrap.innerHTML='<div><div class="loading">Please select at least one month.</div></div>';
-    return;
-  }
-  const rows=getBuyPlanRows();
-  const total=rows.reduce((s,r)=>s+(+r.buy_qty||0),0);
-  const review=rows.filter(r=>+r.below_moq).length;
-  document.getElementById('bp-total').textContent=total.toLocaleString();
-  document.getElementById('bp-lines').textContent=rows.length.toLocaleString();
-  document.getElementById('bp-review').textContent=review.toLocaleString();
-  const shown=rows.slice(0,500);
-  if(!shown.length){wrap.innerHTML='<div><div class="loading">No lines match current filters. Try "All lines" in the Show Only dropdown.</div></div>';return;}
-  wrap.innerHTML=`<div><table>
-    <thead><tr><th>Brand</th><th>Style</th><th>Colour</th><th>Size</th><th>Month</th>
-      <th>P50 Expected</th><th>P90 High</th><th>Buy Qty</th><th>MOQ</th><th>Flags</th></tr></thead>
-    <tbody>${shown.map(r=>{
-      const flags=[];
-      if(+r.new_style)flags.push('<span class="tag tag-info">New Style</span>');
-      if(+r.below_moq)flags.push('<span class="tag tag-warning">Below MOQ</span>');
-      if(+r.zero_fcst)flags.push('<span class="tag tag-error">Zero Forecast</span>');
-      return`<tr>
-        <td class="strong">${r.brand}${newTag(r.brand)}</td><td class="mono">${r.style}</td>
-        <td>${r.colour||'—'}</td><td class="mono">${r.size||'—'}</td>
-        <td class="mono">${r.month}</td>
-        <td class="mono">${(+r.p50||0).toLocaleString()}</td>
-        <td class="mono">${(+r.p90||0).toLocaleString()}</td>
-        <td class="mono strong">${(+r.buy_qty||0).toLocaleString()}</td>
-        <td class="mono">${r.moq||'—'}</td>
-        <td>${flags.join(' ')||'<span class="tag tag-success">OK</span>'}</td>
-      </tr>`;}).join('')}</tbody></table></div>`;
-  if(rows.length>500){
-    wrap.innerHTML+=`<div class="banner info" style="margin-top:14px"><div class="banner-icon">i</div>
-      <div class="banner-body">Showing 500 of ${rows.length.toLocaleString()} rows. Click <strong>Export</strong> for the full dataset.</div></div>`;
-  }
-}
-
-function downloadBuyPlan(){
-  const rows=getBuyPlanRows();
-  if(!rows.length){alert('No rows match current filters.');return;}
-  const stamp=new Date().toISOString().slice(0,10);
-  const fname='BuyPlan_'+stamp;
-  try{
-    if(typeof XLSX==='undefined')throw 'no xlsx';
-    const ex=rows.map(r=>({
-      'Brand':r.brand,'Style':r.style,'Colour':r.colour,'Size':r.size,'Month':r.month,
-      'P50 Forecast (Expected)':(+r.p50||0),'P90 Forecast (High)':(+r.p90||0),
-      'Recommended Buy Qty':(+r.buy_qty||0),'MOQ':r.moq,
-      'New Style':+r.new_style?'Yes':'','Below MOQ':+r.below_moq?'Yes':'',
-    }));
-    const ws=XLSX.utils.json_to_sheet(ex);
-    ws['!cols']=[{wch:20},{wch:14},{wch:16},{wch:6},{wch:10},{wch:18},{wch:14},{wch:18},{wch:8},{wch:10},{wch:10}];
-    const wb=XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb,'Buy Plan',ws);
-    XLSX.writeFile(wb,fname+'.xlsx');
-  }catch(e){
-    const cols=['Brand','Style','Colour','Size','Month','P50','P90','Buy Qty','MOQ','New Style','Below MOQ'];
-    const csv=[cols.join(','),...rows.map(r=>[r.brand,r.style,r.colour,r.size,r.month,
-      (+r.p50||0),(+r.p90||0),(+r.buy_qty||0),r.moq,+r.new_style?'Yes':'',+r.below_moq?'Yes':'']
-      .map(v=>`"${v||''}"`).join(','))].join('\n');
-    const a=document.createElement('a');
-    a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-    a.download=fname+'.csv';document.body.appendChild(a);a.click();document.body.removeChild(a);
-  }
-}
-
-/* ══ RECOMMENDATIONS PAGE ═════════════════════════════ */
-function initRecs(){
-  const xs=D.recommendations?.crosssell||[];
-  const ns=D.recommendations?.newstyle||[];
-  document.getElementById('rec-xsell').textContent=xs.length.toLocaleString();
-  document.getElementById('rec-newstyle').textContent=ns.length.toLocaleString();
-  const customers=new Set([...xs.map(r=>r.customer),...ns.map(r=>r.customer)]);
-  document.getElementById('rec-customers').textContent=customers.size;
-  document.getElementById('recBadge').textContent=(xs.length+ns.length).toLocaleString();
-  document.getElementById('recCount').textContent=Math.round((xs.length+ns.length)/1000)+'K';
-
-  const csel=document.getElementById('rec-customer');
-  [...customers].sort().forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;csel.appendChild(o);});
-
-  const brands=new Set([...xs.map(r=>r.brand),...ns.map(r=>r.brand)]);
-  const bsel=document.getElementById('rec-brand');
-  [...brands].filter(Boolean).sort().forEach(b=>{const o=document.createElement('option');o.value=b;o.textContent=b;bsel.appendChild(o);});
-
-  renderRecs();
-}
-
-function renderRecs(){
-  const type=document.getElementById('rec-type').value;
-  const customer=document.getElementById('rec-customer').value;
-  const brand=document.getElementById('rec-brand').value;
-  const minScore=parseFloat(document.getElementById('rec-score').value);
-
-  let combined=[];
-  if(type==='ALL'||type==='brand'){
-    combined=combined.concat((D.recommendations?.crosssell||[]).map(r=>({...r,_type:'brand',_score:+r.confidence||0})));
-  }
-  if(type==='ALL'||type==='style'){
-    combined=combined.concat((D.recommendations?.newstyle||[]).map(r=>({...r,_type:'style',_score:+r.score||0})));
-  }
-  if(customer!=='ALL')combined=combined.filter(r=>r.customer===customer);
-  if(brand!=='ALL')combined=combined.filter(r=>r.brand===brand);
-  // Score normalisation: cross-sell uses 0–30, style uses 0–10. Convert both to 0–10.
-  combined.forEach(r=>{r._score10=r._type==='brand'?Math.min(r._score/3,10):r._score;});
-  combined=combined.filter(r=>r._score10>=minScore);
-  combined.sort((a,b)=>b._score10-a._score10);
-  combined=combined.slice(0,80);
-
-  const list=document.getElementById('rec-list');
-  if(!combined.length){
-    list.innerHTML='<div class="card"><div class="loading">No recommendations match the current filters.</div></div>';
-    return;
-  }
-  list.innerHTML=combined.map((r,idx)=>recCard(r,idx)).join('');
-}
-
-function recCard(r,idx){
-  const isStyle=r._type==='style';
-  const score=r._score10.toFixed(1);
-  const scoreColor=score>=8.5?'var(--success)':score>=7?'var(--warning)':'var(--muted)';
-  const typeLabel=isStyle?'NEW STYLE':'BRAND CROSS-SELL';
-
-  // Build "why" detail
-  let why='';
-  if(isStyle){
-    const cm=+r.colour_match_pct||0;
-    why=`<strong>${r.customer}</strong> currently buys <strong>${r.brand}</strong> in volume.
-      The style <strong>${r.style}</strong> has not yet been ordered by this customer, but matches their existing colour and price profile closely.
-      <br><br>
-      <strong>Match signals:</strong>
-      <br>· Colour profile compatibility: <strong>${cm}%</strong> overlap with their historical orders in this brand
-      <br>· Price alignment: this style sits within their usual unit price band for ${r.brand}
-      <br>· Market validation: composite score <strong>${score}/10</strong> based on similar customer adoption patterns and broader market demand for this style`;
-  } else {
-    const sim=+r.similar_customers||0;
-    why=`<strong>${r.customer}</strong> has a buying profile similar to <strong>${sim} other customers</strong> who already stock <strong>${r.brand}</strong>.
-      Those similar customers are characterised by overlapping brand portfolios, comparable order sizes and aligned customer-tier profiles.
-      <br><br>
-      <strong>Why this brand specifically:</strong>
-      <br>· ${sim} similar customers already buy ${r.brand} — strongest co-purchase signal among unsold brands
-      <br>· Confidence score: <strong>${score}/10</strong> normalised from the cosine-similarity-weighted purchase volume of those similar customers
-      <br>· The brand fits the customer's existing price tier and category mix based on their last 12 months of ordering`;
-  }
-
-  // Suggested initial buy (rough estimate based on score and customer scale)
-  const baseQty=isStyle?Math.round(+r._score*40):Math.round(+r._score*8);
-  const initialMonths=3;
-  const totalQty=baseQty*initialMonths;
-  const buyHtml=`
-    <div class="rec-buy-row"><span class="rec-buy-label">Suggested initial period</span><span class="rec-buy-val">${initialMonths} months</span></div>
-    <div class="rec-buy-row"><span class="rec-buy-label">Expected monthly demand</span><span class="rec-buy-val">~${baseQty} units</span></div>
-    <div class="rec-buy-row"><span class="rec-buy-label">Total initial buy</span><span class="rec-buy-val" style="color:var(--primary-dark)">${totalQty} units</span></div>
-    <div class="rec-buy-row"><span class="rec-buy-label">Pitch confidence</span><span class="rec-buy-val">${score} / 10</span></div>`;
-
-  return `<div class="rec-card">
-    <div class="rec-head">
-      <div class="rec-meta">
-        <div class="rec-customer">${r.customer}</div>
-        <div class="rec-title">${isStyle?`Introduce style <span class="mono">${r.style}</span> from ${r.brand}${newTag(r.brand)}`:`Pitch ${r.brand}${newTag(r.brand)}`}</div>
-        <div class="rec-tags">
-          <span class="tag tag-primary">${typeLabel}</span>
-          <span class="tag" style="background:rgba(0,0,0,.04);color:${scoreColor}">Score ${score}/10</span>
-          <span class="tag tag-neutral">${r.priority||'HIGH'}</span>
-        </div>
-      </div>
-      <div class="rec-actions">
-        <button class="btn btn-outline btn-sm" onclick='openModal(${idx})'>Customize</button>
-      </div>
-    </div>
-    <div class="rec-detail">
-      <div>
-        <div class="rec-section-label">Why we recommend this</div>
-        <div class="rec-text">${why}</div>
-      </div>
-      <div>
-        <div class="rec-section-label">Suggested Initial Buy Plan</div>
-        <div>${buyHtml}</div>
-      </div>
-    </div>
-  </div>`;
-}
-
-/* Customize modal */
-let _modalRec=null;
-function openModal(idx){
-  // Recompute current list to find the rec
-  const type=document.getElementById('rec-type').value;
-  let combined=[];
-  if(type==='ALL'||type==='brand')combined=combined.concat((D.recommendations?.crosssell||[]).map(r=>({...r,_type:'brand',_score:+r.confidence||0})));
-  if(type==='ALL'||type==='style')combined=combined.concat((D.recommendations?.newstyle||[]).map(r=>({...r,_type:'style',_score:+r.score||0})));
-  const customer=document.getElementById('rec-customer').value;
-  const brand=document.getElementById('rec-brand').value;
-  const minScore=parseFloat(document.getElementById('rec-score').value);
-  if(customer!=='ALL')combined=combined.filter(r=>r.customer===customer);
-  if(brand!=='ALL')combined=combined.filter(r=>r.brand===brand);
-  combined.forEach(r=>{r._score10=r._type==='brand'?Math.min(r._score/3,10):r._score;});
-  combined=combined.filter(r=>r._score10>=minScore);
-  combined.sort((a,b)=>b._score10-a._score10);
-
-  const r=combined[idx];if(!r)return;
-  _modalRec=r;
-  const isStyle=r._type==='style';
-  const baseQty=isStyle?Math.round(+r._score*40):Math.round(+r._score*8);
-  document.getElementById('modalTitle').textContent=`Customize: ${r.customer}`;
-  document.getElementById('modalSub').textContent=isStyle?`Style ${r.style} · ${r.brand}`:`Brand pitch · ${r.brand}`;
-  document.getElementById('modalBody').innerHTML=`
-    <div class="fld" style="margin-bottom:14px"><div class="fld-label">Initial period (months)</div>
-      <input type="text" id="cs-months" value="3"></div>
-    <div class="fld" style="margin-bottom:14px"><div class="fld-label">Monthly quantity</div>
-      <input type="text" id="cs-qty" value="${baseQty}"></div>
-    <div class="fld" style="margin-bottom:14px"><div class="fld-label">Notes for sales rep</div>
-      <input type="text" id="cs-notes" placeholder="Add a note for the sales conversation"></div>`;
-  document.getElementById('customizeModal').classList.add('open');
+  const conf=err<20&&ratio>=0.8&&ratio<=1.4?'High — use P50 for buying':err<40?'Medium — add P90 buffer':'Low — review manually';
+  const col=err<20?'tag-success':err<40?'tag-warning':'tag-error';
+  tagEl.innerHTML='<span class="tag '+col+'" style="font-size:11px">'+conf+'</span>';
 }
 function closeModal(){document.getElementById('customizeModal').classList.remove('open');}
 function saveCustomize(){
