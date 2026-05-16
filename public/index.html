@@ -1208,6 +1208,86 @@ function saveCustomize(){
 
 /* ══ ACCURACY PAGE ════════════════════════════════════ */
 
+
+function initRecs(){
+  const xs=D.recommendations?.crosssell||[];
+  const ns=D.recommendations?.newstyle||[];
+  document.getElementById('rec-xsell').textContent=xs.length.toLocaleString();
+  document.getElementById('rec-newstyle').textContent=ns.length.toLocaleString();
+  const customers=new Set([...xs.map(r=>r.customer),...ns.map(r=>r.customer)]);
+  document.getElementById('rec-customers').textContent=customers.size;
+  document.getElementById('recBadge').textContent=(xs.length+ns.length).toLocaleString();
+  document.getElementById('recCount').textContent=Math.round((xs.length+ns.length)/1000)+'K';
+  const csel=document.getElementById('rec-customer');
+  [...customers].sort().forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;csel.appendChild(o);});
+  const brands=new Set([...xs.map(r=>r.brand),...ns.map(r=>r.brand)]);
+  const bsel=document.getElementById('rec-brand');
+  [...brands].filter(Boolean).sort().forEach(b=>{const o=document.createElement('option');o.value=b;o.textContent=b;bsel.appendChild(o);});
+  renderRecs();
+}
+
+function renderRecs(){
+  const type=document.getElementById('rec-type').value;
+  const customer=document.getElementById('rec-customer').value;
+  const brand=document.getElementById('rec-brand').value;
+  const minScore=parseFloat(document.getElementById('rec-score').value);
+  let combined=[];
+  if(type==='ALL'||type==='brand')combined=combined.concat((D.recommendations?.crosssell||[]).map(r=>({...r,_type:'brand',_score:+r.confidence||0})));
+  if(type==='ALL'||type==='style')combined=combined.concat((D.recommendations?.newstyle||[]).map(r=>({...r,_type:'style',_score:+r.score||0})));
+  if(customer!=='ALL')combined=combined.filter(r=>r.customer===customer);
+  if(brand!=='ALL')combined=combined.filter(r=>r.brand===brand);
+  combined.forEach(r=>{r._score10=r._type==='brand'?Math.min(r._score/3,10):r._score;});
+  combined=combined.filter(r=>r._score10>=minScore).sort((a,b)=>b._score10-a._score10).slice(0,80);
+  const list=document.getElementById('rec-list');
+  if(!combined.length){list.innerHTML='<div class="card"><div class="loading">No recommendations match the current filters.</div></div>';return;}
+  list.innerHTML=combined.map((r,idx)=>recCard(r,idx)).join('');
+}
+
+function recCard(r,idx){
+  const isStyle=r._type==='style';
+  const score=r._score10.toFixed(1);
+  const scoreColor=score>=8.5?'var(--success)':score>=7?'var(--warning)':'var(--muted)';
+  const baseQty=isStyle?Math.round(+r._score*40):Math.round(+r._score*8);
+  const totalQty=baseQty*3;
+  const sim=+r.similar_customers||0;
+  const cm=+r.colour_match_pct||0;
+  const why=isStyle?r.customer+' currently buys '+r.brand+' in volume. Style '+r.style+' has not yet been ordered but matches their colour and price profile. Colour compatibility: '+cm+'%. Composite score: '+score+'/10.':r.customer+' has a buying profile similar to '+sim+' other customers who already stock '+r.brand+'. Confidence score: '+score+'/10 normalised from cosine-similarity-weighted purchase volume.';
+  const buyHtml='<div class="rec-buy-row"><span class="rec-buy-label">Suggested initial period</span><span class="rec-buy-val">3 months</span></div><div class="rec-buy-row"><span class="rec-buy-label">Expected monthly demand</span><span class="rec-buy-val">~'+baseQty+' units</span></div><div class="rec-buy-row"><span class="rec-buy-label">Total initial buy</span><span class="rec-buy-val" style="color:var(--primary-dark)">'+totalQty+' units</span></div><div class="rec-buy-row"><span class="rec-buy-label">Pitch confidence</span><span class="rec-buy-val">'+score+' / 10</span></div>';
+  return '<div class="rec-card"><div class="rec-head"><div class="rec-meta"><div class="rec-customer">'+r.customer+'</div><div class="rec-title">'+(isStyle?'Introduce style <span class="mono">'+r.style+'</span> from '+r.brand+newTag(r.brand):'Pitch '+r.brand+newTag(r.brand))+'</div><div class="rec-tags"><span class="tag tag-primary">'+(isStyle?'NEW STYLE':'BRAND CROSS-SELL')+'</span><span class="tag" style="background:rgba(0,0,0,.04);color:'+scoreColor+'">Score '+score+'/10</span><span class="tag tag-neutral">'+(r.priority||'HIGH')+'</span></div></div><div class="rec-actions"><button class="btn btn-outline btn-sm" onclick="openModal('+idx+')">Customize</button></div></div><div class="rec-detail"><div><div class="rec-section-label">Why we recommend this</div><div class="rec-text">'+why+'</div></div><div><div class="rec-section-label">Suggested Initial Buy Plan</div>'+buyHtml+'</div></div></div>';
+}
+
+let _modalRec=null;
+function openModal(idx){
+  let combined=[];
+  const type=document.getElementById('rec-type').value;
+  if(type==='ALL'||type==='brand')combined=combined.concat((D.recommendations?.crosssell||[]).map(r=>({...r,_type:'brand',_score:+r.confidence||0})));
+  if(type==='ALL'||type==='style')combined=combined.concat((D.recommendations?.newstyle||[]).map(r=>({...r,_type:'style',_score:+r.score||0})));
+  combined.forEach(r=>{r._score10=r._type==='brand'?Math.min(r._score/3,10):r._score;});
+  const minScore=parseFloat(document.getElementById('rec-score').value);
+  combined=combined.filter(r=>r._score10>=minScore).sort((a,b)=>b._score10-a._score10);
+  const r=combined[idx];if(!r)return;
+  _modalRec=r;
+  const isStyle=r._type==='style';
+  const baseQty=isStyle?Math.round(+r._score*40):Math.round(+r._score*8);
+  document.getElementById('modalTitle').textContent='Customize: '+r.customer;
+  document.getElementById('modalSub').textContent=isStyle?'Style '+r.style+' from '+r.brand:'Brand pitch: '+r.brand;
+  document.getElementById('modalBody').innerHTML='<div class="fld" style="margin-bottom:14px"><div class="fld-label">Initial period (months)</div><input type="text" id="cs-months" value="3"></div><div class="fld" style="margin-bottom:14px"><div class="fld-label">Monthly quantity</div><input type="text" id="cs-qty" value="'+baseQty+'"></div><div class="fld" style="margin-bottom:14px"><div class="fld-label">Notes for sales rep</div><input type="text" id="cs-notes" placeholder="Add a note"></div>';
+  document.getElementById('customizeModal').classList.add('open');
+}
+function closeModal(){document.getElementById('customizeModal').classList.remove('open');}
+function saveCustomize(){
+  const r=_modalRec;
+  const months=document.getElementById('cs-months').value;
+  const qty=document.getElementById('cs-qty').value;
+  const notes=document.getElementById('cs-notes').value;
+  const rowData={'Customer':r.customer,'Type':r._type==='style'?'New Style':'Cross-sell','Brand':r.brand,'Style':r.style||'N/A','Months':months,'Qty/Month':qty,'Total Buy':parseInt(months||3)*parseInt(qty||0),'Score':r._score10.toFixed(1),'Notes':notes};
+  const fname='Pitch_'+(r.customer||'x').replace(/[^A-Za-z0-9]/g,'_').slice(0,30)+'_'+new Date().toISOString().slice(0,10);
+  try{if(typeof XLSX!=='undefined'){const ws=XLSX.utils.json_to_sheet([rowData]);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,'Pitch',ws);XLSX.writeFile(wb,fname+'.xlsx');}}
+  catch(e){const keys=Object.keys(rowData);const csv=[keys.join(','),keys.map(k=>'"'+String(rowData[k]||'')+'"').join(',')].join('
+');const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download=fname+'.csv';document.body.appendChild(a);a.click();document.body.removeChild(a);}
+  closeModal();
+}
+
 function initAccuracy(){
   renderAccuracyKpis();
   renderAccuracyBars();
