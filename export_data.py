@@ -42,7 +42,8 @@ sku = bq(f"""
     FROM {T('forecasts_sku')}
     WHERE p50 > 0
     GROUP BY brand, year_month, style, colour, size
-    ORDER BY brand, year_month, style, p50 DESC
+    ORDER BY p50 DESC
+    LIMIT 50000
 
 """)
 
@@ -77,22 +78,27 @@ bp_kpis = bq(f"""
 
 # Buy plan lines for website filter/download (limit for JSON size)
 bp_lines = bq(f"""
-    SELECT brand, style, colour, size,
-           SUBSTR(year_month,1,7) AS month,
-           ROUND(forecast_p50,0) AS p50,
-           ROUND(forecast_p90,0) AS p90,
-           ROUND(COALESCE(buy_qty,0),0)      AS buy_qty,
-           moq,
-           CAST(new_style_flag AS INT64)      AS new_style,
-           CAST(below_moq_flag AS INT64)      AS below_moq,
-           CAST(zero_forecast_flag AS INT64)  AS zero_fcst
-    FROM {T('buy_plan')}
-    WHERE (COALESCE(forecast_p50,0) > 0
-       OR COALESCE(forecast_p90,0) > 0
-       OR COALESCE(buy_qty,0) > 0)
-      AND brand NOT IN ('BENCH','Original Penguin','THE RAGGED PRIEST','DFND',
-                        'Salvation Brands','Broad Textile','Rockport Apparel','Rockport Comfort')
-      AND COALESCE(buy_qty,0) > 0
+    SELECT brand, style, colour, size, month, p50, p90, buy_qty, moq, new_style, below_moq, zero_fcst
+    FROM (
+      SELECT brand, style, colour, size,
+             SUBSTR(year_month,1,7) AS month,
+             ROUND(forecast_p50,0) AS p50,
+             ROUND(forecast_p90,0) AS p90,
+             ROUND(COALESCE(buy_qty,0),0) AS buy_qty,
+             moq,
+             CAST(new_style_flag AS INT64)     AS new_style,
+             CAST(below_moq_flag AS INT64)      AS below_moq,
+             CAST(zero_forecast_flag AS INT64)  AS zero_fcst,
+             ROW_NUMBER() OVER (
+               PARTITION BY brand
+               ORDER BY COALESCE(buy_qty,0) DESC, year_month
+             ) AS rn
+      FROM `inventory-planning-model`.`Model`.`buy_plan`
+      WHERE COALESCE(buy_qty,0) > 0
+        AND brand NOT IN ('BENCH','Original Penguin','THE RAGGED PRIEST','DFND',
+                          'Salvation Brands','Broad Textile','Rockport Apparel','Rockport Comfort')
+    )
+    WHERE rn <= 3000
     ORDER BY brand, style, colour, size, month
 """)
 
