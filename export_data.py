@@ -87,9 +87,11 @@ bp_lines = bq(f"""
            CAST(below_moq_flag AS INT64)      AS below_moq,
            CAST(zero_forecast_flag AS INT64)  AS zero_fcst
     FROM {T('buy_plan')}
-    WHERE COALESCE(forecast_p50,0) > 0
+    WHERE (COALESCE(forecast_p50,0) > 0
        OR COALESCE(forecast_p90,0) > 0
-       OR COALESCE(buy_qty,0) > 0
+       OR COALESCE(buy_qty,0) > 0)
+      AND brand NOT IN ('BENCH','Original Penguin','THE RAGGED PRIEST','DFND',
+                        'Salvation Brands','Broad Textile','Rockport Apparel','Rockport Comfort')
     ORDER BY brand, style, colour, size, month
 """)
 
